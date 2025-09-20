@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using DemoBlazorMovil.Services;
+using Microsoft.Extensions.Logging;
 
 namespace DemoBlazorMovil
 {
@@ -15,12 +16,14 @@ namespace DemoBlazorMovil
                 });
 
             builder.Services.AddMauiBlazorWebView();
-            builder.Services.AddScoped<Services.ProductoService>();
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();
     		builder.Logging.AddDebug();
 #endif
+            builder.Services.AddSingleton<UserService>();
+            builder.Services.AddSingleton<MovieService>();
+            builder.Services.AddSingleton<AuthService>();
 
             return builder.Build();
         }

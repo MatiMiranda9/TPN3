@@ -22,7 +22,7 @@
         <Nullable>enable</Nullable>
 
         <!-- Display name -->
-        <ApplicationTitle>DemoBlazorMovil</ApplicationTitle>
+        <ApplicationTitle>Cartelera</ApplicationTitle>
 
         <!-- App Identifier -->
         <ApplicationId>com.companyname.demoblazormovil</ApplicationId>
@@ -64,6 +64,10 @@
         <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="wwwroot\img\" />
     </ItemGroup>
 
 </Project>

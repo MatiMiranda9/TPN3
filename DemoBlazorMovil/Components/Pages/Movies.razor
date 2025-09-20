@@ -1,0 +1,255 @@
+﻿@page "/movies"
+@using Microsoft.AspNetCore.Components.Forms
+@using DemoBlazorMovil.Models
+@using DemoBlazorMovil.Services
+@inject MovieService MovieService
+@inject AuthService AuthService
+
+<div class="cartelera-bg">
+    <h3 class="cartelera-title">
+        <i class="bi bi-camera-reels"></i> Cartelera
+    </h3>
+
+    @if (AuthService.IsAdmin)
+    {
+        <button class="btn btn-primary mb-3" @onclick="NewMovie">
+            <i class="bi bi-film"></i> Nueva Película
+        </button>
+    }
+
+<div class="row row-cols-1 row-cols-md-3 g-4">
+    @foreach (var movie in movies)
+    {
+        <div class="col">
+            <div class="card h-100 shadow-sm">
+                <img src="@movie.ImagePath" class="card-img-top" alt="@movie.Title" style="height:330px; object-fit:contain;" />
+                <div class="card-body">
+                    <h5 class="card-title">@movie.Title (@movie.Year)</h5>
+                    <p class="card-text">@movie.Genre</p>
+
+                    <!-- Funciones -->
+                    <h6 class="mt-3">Funciones:</h6>
+                    @if (movie.Showtimes != null && movie.Showtimes.Any())
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var func in movie.Showtimes)
+                            {
+                                <li class="list-group-item">
+                                    <strong>@func.Time.ToString("dd/MM/yyyy HH:mm")</strong> - Sala @func.Room - Precio: $@func.Price
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p class="text-muted">Sin funciones disponibles</p>
+                    }
+                </div>
+
+                @if (AuthService.IsAdmin)
+                {
+                    <div class="card-footer text-center">
+                        <button class="btn btn-sm btn-warning me-2" @onclick="() => EditMovie(movie)">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteMovie(movie.Id)">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+</div>
+    <!-- Modal -->
+    <div class="modal fade" id="movieModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@((currentMovie.Id == 0) ? "Nueva Película" : "Editar Película")</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="currentMovie" OnValidSubmit="SaveMovie">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        <div class="mb-3">
+                            <label class="form-label">Título</label>
+                            <InputText class="form-control" @bind-Value="currentMovie.Title" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Género</label>
+                            <InputText class="form-control" @bind-Value="currentMovie.Genre" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Año</label>
+                            <InputNumber class="form-control" @bind-Value="currentMovie.Year" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Imagen (ruta local)</label>
+                            <InputText class="form-control" @bind-Value="currentMovie.ImagePath" />
+                        </div>
+
+                        <h6>Funciones</h6>
+                            @foreach (var func in currentMovie.Showtimes)
+                            {
+                                var i = currentMovie.Showtimes.IndexOf(func);
+                                <div class="border p-2 mb-2 rounded">
+                                    <label>Inicio</label>
+                                    <input type="datetime-local" class="form-control"
+                                    @bind-value="@func.Time"/>
+
+                                    <label>Sala</label>
+                                    <InputText class="form-control" @bind-Value="@func.Room" />
+
+                                    <label>Precio</label>
+                                    <InputNumber class="form-control" @bind-Value="@func.Price" />
+
+                                    <button type="button" class="btn btn-sm btn-danger mt-1" @onclick="() => RemoveShowtime(i)">Quitar</button>
+                                </div>
+                            }
+
+                        <button type="button" class="btn btn-sm btn-secondary mb-3" @onclick="AddShowtime">
+                            <i class="bi bi-plus-circle"></i> Agregar función
+                        </button>
+
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-success">Guardar</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+@code {
+    private IReadOnlyList<Movie> movies = Array.Empty<Movie>();
+    private Movie currentMovie = new();
+
+    protected override void OnInitialized() => movies = MovieService.GetAll();
+
+    private void SaveMovie()
+    {
+        if (currentMovie.Id == 0)
+            MovieService.Add(currentMovie);
+        else
+            MovieService.Update(currentMovie);
+
+        movies = MovieService.GetAll();
+        currentMovie = new Movie { Showtimes = new List<Showtime>() };
+        HideModal();
+    }
+
+    private void EditMovie(Movie movie)
+    {
+    // Creamos una copia nueva (para no tocar el original hasta guardar)
+    currentMovie = new Movie
+    {
+        Id = movie.Id,
+        Title = movie.Title,
+        Genre = movie.Genre,
+        Year = movie.Year,
+        ImagePath = movie.ImagePath,
+        Showtimes = movie.Showtimes.Select(s => new Showtime
+        {
+            Id = s.Id,
+            Time = s.Time,
+            Room = s.Room,
+            Price = s.Price
+        }).ToList()
+    };
+
+    ShowModal();
+    }
+
+
+    private void DeleteMovie(int id)
+    {
+        MovieService.Delete(id);
+        movies = MovieService.GetAll();
+    }
+
+    private void NewMovie()
+    {
+    // Un objeto limpio
+    currentMovie = new Movie
+    {
+        Id = 0,
+        Title = "",
+        Genre = "",
+        Year = DateTime.Now.Year,
+        ImagePath = "images/movies/generico.jpg",
+        Showtimes = new List<Showtime>()
+    };
+
+    ShowModal();
+    }
+
+    private void AddShowtime()
+    {
+        if (currentMovie.Showtimes == null)
+            currentMovie.Showtimes = new List<Showtime>();
+
+        currentMovie.Showtimes.Add(new Showtime
+        {
+            Id = 0, // se asignará al guardar
+            Time = DateTime.Now,
+            Room = "",
+            Price = 0,
+            MovieId = currentMovie.Id
+        });
+    }
+
+    private void RemoveShowtime(int index)
+    {
+        if (currentMovie.Showtimes != null && index >= 0 && index < currentMovie.Showtimes.Count)
+        {
+            currentMovie.Showtimes.RemoveAt(index);
+        }
+    }
+
+    private void ShowModal() => JS.InvokeVoidAsync("bootstrapModal.show", "#movieModal");
+    private void HideModal() => JS.InvokeVoidAsync("bootstrapModal.hide", "#movieModal");
+
+    [Inject] private IJSRuntime JS { get; set; }
+}
+
+<style>
+    .cartelera-bg {
+        min-height: 100vh;
+        background: linear-gradient(180deg, #1c1c1c 0%, #2a2a2a 100%);
+        padding: 20px;
+    }
+
+    .cartelera-title {
+        color: #f8d210; /* amarillo/dorado */
+        font-weight: bold;
+        text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+        margin-bottom: 20px;
+    }
+
+    .card {
+        border: none;
+        border-radius: 12px;
+        overflow: hidden;
+        transition: transform 0.2s ease;
+    }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+    
+    .card-body h6 {
+        font-weight: bold;
+        color: #333;
+    }
+
+</style>

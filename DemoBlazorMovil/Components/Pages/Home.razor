@@ -1,5 +1,111 @@
 ﻿@page "/"
+@using DemoBlazorMovil.Models
+@using DemoBlazorMovil.Services
+@inject UserService UserService
+@inject AuthService AuthService
+@inject NavigationManager NavManager
 
-<h1>Hello, world!</h1>
+@code {
+    private User? User;
 
-Welcome to your new app.
+    protected override void OnInitialized()
+    {
+        if (AuthService.IsLoggedIn)
+        {
+            User = AuthService.CurrentUser;
+        }
+    }
+
+    private void GoToLogin()
+    {
+        NavManager.NavigateTo("/login"); // Ajusta la ruta a tu página de login
+    }
+}
+
+<div class="home-container">
+    <div class="overlay">
+        @if (AuthService.IsLoggedIn && User != null)
+        {
+            <h1 class="welcome">
+                <i class="bi bi-film"></i> Bienvenido, @User.Name!
+            </h1>
+            <p class="subtitle">Ya puedes explorar nuestra cartelera de cine.</p>
+        }
+        else
+        {
+            <h1 class="login-reminder">
+                <i class="bi bi-box-arrow-in-right"></i> Por favor inicia sesión
+            </h1>
+            <p class="subtitle">Accede para descubrir las películas en cartelera.</p>
+            <button class="btn-login" @onclick="GoToLogin">
+                <i class="bi bi-person-circle"></i> Iniciar Sesión
+            </button>
+        }
+    </div>
+</div>
+
+<style>
+    .home-container {
+        position: relative;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #1c1c1c, #000000);
+        background-size: cover;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .overlay {
+        background: rgba(0, 0, 0, 0.6);
+        padding: 2rem;
+        border-radius: 15px;
+        text-align: center;
+        color: white;
+        max-width: 600px;
+        width: 90%;
+    }
+
+    .welcome {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        color: #ffcc00;
+        text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+    }
+
+    .login-reminder {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: #ff4444;
+        text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+    }
+
+    .subtitle {
+        font-size: 1.2rem;
+        opacity: 0.9;
+        margin-bottom: 1.5rem;
+    }
+
+    .btn-login {
+        background-color: #ffcc00;
+        color: black;
+        font-size: 1.1rem;
+        font-weight: bold;
+        padding: 0.8rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.4);
+    }
+
+        .btn-login:hover {
+            background-color: #ffdd33;
+            transform: scale(1.05);
+        }
+
+    /* Estilos para los íconos */
+    .bi {
+        margin-right: 8px;
+        vertical-align: middle;
+    }
+</style>

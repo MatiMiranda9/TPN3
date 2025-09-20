@@ -1,0 +1,122 @@
+﻿@page "/users"
+@using DemoBlazorMovil.Models
+@using DemoBlazorMovil.Services
+@inject UserService UserService
+
+<h3>Usuarios</h3>
+
+<button class="btn btn-primary mb-3" @onclick="NewUser">
+    <i class="bi bi-person-plus-fill"></i> Nuevo Usuario
+</button>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Foto</th>
+            <th>Nombre</th>
+            <th>Email</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var u in users)
+        {
+            <tr>
+                <td><img src="@u.ImagePath" alt="@u.Name" width="60" height="60" class="rounded-circle" /></td>
+                <td>@u.Name</td>
+                <td>@u.Email</td>
+                <td>
+                    <button class="btn btn-sm btn-warning me-1" @onclick="() => EditUser(u)">
+                        <i class="bi bi-pencil-square"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" @onclick="() => DeleteUser(u.Id)">
+                        <i class="bi bi-trash-fill"></i>
+                    </button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<!-- Modal Usuarios -->
+<div class="modal fade" id="userModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">@((currentUser.Id == 0) ? "Nuevo Usuario" : "Editar Usuario")</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <EditForm Model="currentUser" OnValidSubmit="SaveUser">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        <InputText class="form-control" @bind-Value="currentUser.Name" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <InputText class="form-control" @bind-Value="currentUser.Email" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Contraseña</label>
+                        <InputText type="password" class="form-control" @bind-Value="currentUser.Password" />
+                    </div>
+                    <div class="mb-3">
+                        <label>Imagen (ruta local)</label>
+                        <InputText class="form-control" @bind-Value="currentUser.ImagePath" />
+                    </div>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private IReadOnlyList<User> users = Array.Empty<User>();
+    private User currentUser = new();
+
+    protected override void OnInitialized() => users = UserService.GetAll();
+
+    private void SaveUser()
+    {
+        if (currentUser.Id == 0) UserService.Add(currentUser);
+        else UserService.Update(currentUser);
+
+        currentUser = new User();
+        users = UserService.GetAll();
+        HideModal();
+    }
+
+    private void EditUser(User user)
+    {
+        currentUser = new User
+        {
+            Id = user.Id,
+            Name = user.Name,
+            Email = user.Email,
+            Password = user.Password,
+            ImagePath = user.ImagePath
+        };
+        ShowModal();
+    }
+
+    private void DeleteUser(int id)
+    {
+        UserService.Delete(id);
+        users = UserService.GetAll();
+    }
+
+    private void NewUser()
+    {
+        currentUser = new User();
+        ShowModal();
+    }
+
+    private void ShowModal() => JS.InvokeVoidAsync("bootstrapModal.show", "#userModal");
+    private void HideModal() => JS.InvokeVoidAsync("bootstrapModal.hide", "#userModal");
+
+    [Inject] private IJSRuntime JS { get; set; }
+}
