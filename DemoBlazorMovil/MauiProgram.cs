@@ -21,7 +21,6 @@ namespace DemoBlazorMovil
 
 
 
-            // 🔹 Configuración del HttpClient dependiendo de la plataforma
             builder.Services.AddScoped(sp => new HttpClient
             {
                 BaseAddress = new Uri("http://cineapi.runasp.net/api/")

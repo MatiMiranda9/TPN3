@@ -18,7 +18,6 @@ public class AuthService
 
     public event Action? OnChange;
 
-    // 📌 Login usando el UserService con DTOs
     public async Task<bool> LoginAsync(string email, string password)
     {
         var user = await _userService.ValidateLogin(email, password);

@@ -12,7 +12,6 @@ public class MovieService
         _http = http;
     }
 
-    // ================== PELÍCULAS ==================
     public async Task<List<Movie>> GetAll()
         => await _http.GetFromJsonAsync<List<Movie>>("movies") ?? new();
 
@@ -37,7 +36,6 @@ public class MovieService
         return response.IsSuccessStatusCode;
     }
 
-    // ================== SHOWTIMES (por película) ==================
     public async Task<List<Showtime>> GetShowtimes(int movieId)
         => await _http.GetFromJsonAsync<List<Showtime>>($"movies/{movieId}/showtimes") ?? new();
 
