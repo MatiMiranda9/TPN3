@@ -17,35 +17,35 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav">
              @if (AuthService.IsLoggedIn)
-            {
+             {
 
-                    @if (AuthService.IsAdmin)
-                    {
-                        <li class="nav-item">
-                            <NavLink class="nav-link" href="users">
-                                <i class="bi bi-people-fill"></i> Usuarios
-                            </NavLink>
-                        </li>
-                    }
-                    <li class="nav-item">
-                        <NavLink class="nav-link" href="movies">
-                            <i class="bi bi-film"></i> Películas
-                        </NavLink>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="" @onclick="Logout">
-                            <i class="bi bi-box-arrow-left"></i> Logout
-                        </a>
-                    </li>
-             }
-                else
-                {
-                    <li class="nav-item">
-                        <NavLink class="nav-link" href="login">
-                            <i class="bi bi-box-arrow-in-right"></i> Login
-                        </NavLink>
-                    </li>
-                }
+    @if (AuthService.IsAdmin)
+    {
+        <li class="nav-item">
+            <NavLink class="nav-link" href="users">
+                <i class="bi bi-people-fill"></i> Usuarios
+            </NavLink>
+        </li>
+    }
+    <li class="nav-item">
+        <NavLink class="nav-link" href="movies">
+            <i class="bi bi-film"></i> Películas
+        </NavLink>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="" @onclick="Logout">
+            <i class="bi bi-box-arrow-left"></i> Logout
+        </a>
+    </li>
+}
+else
+{
+    <li class="nav-item">
+        <NavLink class="nav-link" href="login">
+            <i class="bi bi-box-arrow-in-right"></i> Login
+        </NavLink>
+    </li>
+}
             </ul>
         </div>
     </div>

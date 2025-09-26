@@ -1,7 +1,6 @@
-﻿@using DemoBlazorMovil.Services
-@page "/login"
+﻿@page "/login"
 @inherits LayoutComponentBase
-@inject UserService UserService
+@using DemoBlazorMovil.Services
 @inject AuthService AuthService
 @inject NavigationManager Nav
 
@@ -55,12 +54,14 @@
     private string password = "";
     private string? errorMessage;
 
-    void HandleLogin()
+    private async Task HandleLogin()
     {
-        if (AuthService.Login(email, password, UserService))
+        var success = await AuthService.LoginAsync(email, password);
+
+        if (success)
         {
             errorMessage = null;
-            Nav.NavigateTo("/");
+            Nav.NavigateTo("/movies");
         }
         else
         {
@@ -68,12 +69,13 @@
         }
     }
 
-    void HandleLogout()
+    private void HandleLogout()
     {
         AuthService.Logout();
         Nav.NavigateTo("/login");
     }
 }
+
 
 <style>
     .login-container {

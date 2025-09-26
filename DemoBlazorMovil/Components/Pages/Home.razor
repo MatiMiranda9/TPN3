@@ -1,12 +1,12 @@
 ﻿@page "/"
-@using DemoBlazorMovil.Models
+@using DemoBlazorMovil.Shared.DTOs
 @using DemoBlazorMovil.Services
 @inject UserService UserService
 @inject AuthService AuthService
 @inject NavigationManager NavManager
 
 @code {
-    private User? User;
+    private UserDto? User;
 
     protected override void OnInitialized()
     {
@@ -18,7 +18,7 @@
 
     private void GoToLogin()
     {
-        NavManager.NavigateTo("/login"); // Ajusta la ruta a tu página de login
+        NavManager.NavigateTo("/login");
     }
 }
 
@@ -103,7 +103,7 @@
             transform: scale(1.05);
         }
 
-    /* Estilos para los íconos */
+
     .bi {
         margin-right: 8px;
         vertical-align: middle;

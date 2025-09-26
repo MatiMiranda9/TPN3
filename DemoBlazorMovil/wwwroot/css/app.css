@@ -6,6 +6,10 @@ html, body {
     padding: 0;
     background: black;
 }
+.navbar{
+    background-color: transparent !important; /* o ponle el color que quieras */
+    box-shadow: none !important;
+}
 
 a, .btn-link {
     color: #006bb7;

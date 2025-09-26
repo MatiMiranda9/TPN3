@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.ComponentModel.DataAnnotations;
-namespace DemoBlazorMovil.Models;
+namespace DemoBlazorMovil.Shared.Models;
 
 public class Movie
 {
@@ -18,8 +18,9 @@ public class Movie
     [StringLength(50, ErrorMessage = "El género no puede superar los 50 caracteres")]
     public string Genre { get; set; } = "";
 
+    [Required(ErrorMessage = "El año es obligatorio")]
     [Range(1900, 2100, ErrorMessage = "El año debe estar entre 1900 y 2100")]
-    public int Year { get; set; }
+    public int? Year { get; set; }
 
     public string? ImagePath { get; set; } = "images/movies/generico.jpg";
 
