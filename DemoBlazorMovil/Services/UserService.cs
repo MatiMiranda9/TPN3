@@ -18,13 +18,8 @@ public class UserService
     public async Task<UserDto?> GetById(int id)
         => await _http.GetFromJsonAsync<UserDto>($"users/{id}");
 
-    public async Task<UserDto?> Add(UserCreateDto user)
-    {
-        var response = await _http.PostAsJsonAsync("users", user);
-        return await response.Content.ReadFromJsonAsync<UserDto>();
-    }
 
-    public async Task<bool> Update(int id, UserCreateDto user)
+    public async Task<bool> Update(int id, UserDto user)
     {
         var response = await _http.PutAsJsonAsync($"users/{id}", user);
         return response.IsSuccessStatusCode;
@@ -36,13 +31,33 @@ public class UserService
         return response.IsSuccessStatusCode;
     }
 
-    public async Task<UserDto?> ValidateLogin(string email, string password)
+    public async Task<bool> Activar(int id)
     {
-        var loginDto = new UserLoginDto { Email = email, Password = password };
+        var response = await _http.PutAsync($"users/activar/{id}", null);
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> Register(RegisterDTO dto)
+    {
+        var response = await _http.PostAsJsonAsync("users/register", dto);
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<LoginResponseDTO?> ValidateLogin(string email, string password)
+    {
+        var loginDto = new UserLoginDto
+        {
+            Email = email,
+            Password = password
+        };
+
         var response = await _http.PostAsJsonAsync("users/login", loginDto);
 
         if (response.IsSuccessStatusCode)
-            return await response.Content.ReadFromJsonAsync<UserDto>();
+        {
+            return await response.Content
+                .ReadFromJsonAsync<LoginResponseDTO>();
+        }
 
         return null;
     }

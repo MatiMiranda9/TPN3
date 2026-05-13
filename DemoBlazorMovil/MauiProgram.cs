@@ -1,6 +1,7 @@
 ﻿using DemoBlazorMovil.Services;
 using Microsoft.Extensions.Logging;
-using System.Diagnostics;
+using Blazored.LocalStorage;
+using DemoBlazorMovil.Services.Auth;
 
 namespace DemoBlazorMovil
 {
@@ -19,18 +20,33 @@ namespace DemoBlazorMovil
 
             builder.Services.AddMauiBlazorWebView();
 
+            builder.Services.AddTransient<AuthHeaderHandler>();
 
-
-            builder.Services.AddScoped(sp => new HttpClient
+            builder.Services.AddScoped(sp =>
             {
-                BaseAddress = new Uri("http://cineapi.runasp.net/api/")
+                var handler = sp.GetRequiredService<AuthHeaderHandler>();
+
+                handler.InnerHandler = new HttpClientHandler();
+
+                return new HttpClient(handler)
+                {
+                    BaseAddress = new Uri("https://localhost:5001/api/")
+                };
             });
 
 
-            // 🔹 Registrar servicios
+
+            // Servicios
+            builder.Services.AddBlazoredLocalStorage();
+
             builder.Services.AddScoped<UserService>();
             builder.Services.AddScoped<MovieService>();
+            builder.Services.AddScoped<SalaService>();
             builder.Services.AddScoped<AuthService>();
+            builder.Services.AddScoped<ArticuloService>();
+            builder.Services.AddScoped<CartService>();
+            builder.Services.AddScoped<VentaService>();
+
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();

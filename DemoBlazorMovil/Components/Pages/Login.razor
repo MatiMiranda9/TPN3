@@ -34,7 +34,13 @@
             <button class="btn-login w-100" @onclick="HandleLogin">
                 <i class="bi bi-box-arrow-in-right"></i> Ingresar
             </button>
-        }
+            
+             <p>
+                ¿No tenés cuenta?
+                <a href="/register">Registrarse</a>
+             </p>
+
+           }
         else
         {
             <div class="alert alert-success">
@@ -47,7 +53,7 @@
             </button>
         }
     </div>
-</div>
+    </div>
 
 @code {
     private string email = "";
@@ -61,7 +67,7 @@
         if (success)
         {
             errorMessage = null;
-            Nav.NavigateTo("/movies");
+            Nav.NavigateTo("/menu");
         }
         else
         {
@@ -81,7 +87,7 @@
     .login-container {
         position: relative;
         min-height: 100vh;
-        background: url("images/background/cinema.jpg") no-repeat center center fixed;
+        background: url("images/background/background.png") no-repeat center center fixed;
         background-size: cover;
         display: flex;
         align-items: center;
@@ -101,7 +107,7 @@
     }
 
     .login-title {
-        color: #ffcc00;
+        color: #D65D00;
         font-size: 1.8rem;
         margin-bottom: 1.5rem;
         text-shadow: 2px 2px 6px rgba(0,0,0,0.7);
@@ -118,7 +124,7 @@
     }
 
     .btn-login {
-        background-color: #ffcc00;
+        background-color: #D65D00;
         color: black;
         font-weight: bold;
         font-size: 1.1rem;

@@ -20,7 +20,9 @@ namespace DemoBlazorMovil.Shared.DTOs
         [MinLength(4, ErrorMessage = "La contraseña debe tener al menos 4 caracteres")]
         public string Password { get; set; } = string.Empty;
         public string ImagePath { get; set; } = "images/users/generico.jpg";
-        public bool IsAdmin { get; set; }
+        public int IdRol { get; set; } = 2;
+
+        public bool IsACtive { get; set; }
     }
     public class UserDto
     {
@@ -28,7 +30,9 @@ namespace DemoBlazorMovil.Shared.DTOs
         public string Name { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string ImagePath { get; set; } = string.Empty;
-        public bool IsAdmin { get; set; }
+        public int IdRol { get; set; } = 2;
+
+        public bool IsActive { get; set; }
 
     }
 

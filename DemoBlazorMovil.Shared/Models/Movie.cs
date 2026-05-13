@@ -6,24 +6,20 @@ using System.Threading.Tasks;
 using System.ComponentModel.DataAnnotations;
 namespace DemoBlazorMovil.Shared.Models;
 
-public class Movie
+
+public partial class Movie
 {
     public int Id { get; set; }
 
-    [Required(ErrorMessage = "El título es obligatorio")]
-    [StringLength(100, ErrorMessage = "El título no puede superar los 100 caracteres")]
-    public string Title { get; set; } = "";
+    public string Title { get; set; } = null!;
 
-    [Required(ErrorMessage = "El género es obligatorio")]
-    [StringLength(50, ErrorMessage = "El género no puede superar los 50 caracteres")]
-    public string Genre { get; set; } = "";
+    public string Genre { get; set; } = null!;
 
-    [Required(ErrorMessage = "El año es obligatorio")]
-    [Range(1900, 2100, ErrorMessage = "El año debe estar entre 1900 y 2100")]
-    public int? Year { get; set; }
+    public int Year { get; set; }
 
-    public string? ImagePath { get; set; } = "images/movies/generico.jpg";
+    public string? ImagePath { get; set; }
+
+    public bool IsActive = true;
 
     public List<Showtime> Showtimes { get; set; } = new();
 }
-

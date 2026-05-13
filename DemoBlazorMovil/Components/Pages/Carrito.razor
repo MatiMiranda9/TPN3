@@ -1,0 +1,640 @@
+﻿@page "/carrito"
+@using DemoBlazorMovil.Services
+@using DemoBlazorMovil.Shared.DTOs
+@using System.Net.Http.Json
+@inject CartService CartService
+@inject AuthService AuthService
+@inject VentaService VentaService
+@inject NavigationManager Nav
+
+<div class="carrito-container">
+
+    <h2 class="carrito-titulo">
+        🛒 Tu Carrito
+    </h2>
+
+    @if (!CartService.Items.Any() && !CartService.Tickets.Any())
+    {
+        <div class="carrito-vacio">
+            <div class="icono-vacio">🛍️</div>
+            <h4>Tu carrito está vacío</h4>
+            <p>Agregá productos desde el menú para comenzar tu compra.</p>
+
+            <button class="btn-vacio" @onclick="IrAlInicio">
+                Explorar productos
+            </button>
+        </div>
+    }
+    else
+    {
+        @foreach (var item in CartService.Items)
+        {
+            <div class="cart-item">
+                <img src="@item.ImagePath" />
+
+                <div class="cart-info">
+                    <h5>@item.Nombre</h5>
+                    <p class="precio-unitario">$@item.Precio</p>
+
+                    <div class="contador">
+                        <button @onclick="() => CartService.Decrease(item.ArticuloId)">−</button>
+                        <span>@item.Cantidad</span>
+                        <button @onclick="() => CartService.Increase(item.ArticuloId)">+</button>
+                    </div>
+
+                    <p class="subtotal">
+                        Subtotal: <strong>$@item.Subtotal</strong>
+                    </p>
+
+                    <button class="btn-eliminar"
+                            @onclick="() => CartService.RemoveItem(item.ArticuloId)">
+                        Eliminar
+                    </button>
+                </div>
+            </div>
+        }
+
+        @if (CartService.Tickets.Any())
+        {
+            <h4>Tickets</h4>
+
+            @foreach (var t in CartService.Tickets)
+            {
+                <div class="ticket-cardWrap">
+
+                    <div class="ticket-card ticket-cardLeft">
+
+                        <h1>ITES <span>Cinema</span></h1>
+
+                        <div class="ticket-title">
+                            <h2>@t.MovieNombre</h2>
+                            <span>Película</span>
+                        </div>
+
+                        <div class="ticket-seat">
+                            <h2>@t.Sala - @t.Asiento</h2>
+                            <span>Sala - Asiento</span>
+                        </div>
+
+                        <div class="ticket-time">
+                            <h2>@t.Fecha.ToString("dd/MM HH:mm")</h2>
+                            <span>Función</span>
+                        </div>
+
+                        <div class="ticket-price">
+                            <h2>$@t.Precio</h2>
+                            <span>Precio</span>
+                        </div>
+
+                    </div>
+
+                    <div class="ticket-card ticket-cardRight">
+
+                        <div class="ticket-eye"></div>
+
+                        <div class="ticket-number">
+                            <h3>@t.Asiento</h3>
+                            <span>Asiento</span>
+                        </div>
+
+                        <div class="ticket-barcode"></div>
+
+                    </div>
+
+                </div>
+
+                <button class="btn-eliminar"
+                        @onclick="() => CartService.RemoveTicket(t.ShowtimeId,t.Asiento)">
+                    Eliminar
+                </button>
+            }
+        }
+
+        <div class="carrito-total">
+            <h3>Total</h3>
+            <h2>$@CartService.GetTotal()</h2>
+        </div>
+
+        <button class="btn-confirmar-compra"
+                @onclick="ConfirmarCompra">
+            Confirmar compra
+        </button>
+    }
+
+</div>
+
+@if (mostrarModalExito && compraExitosa != null)
+{
+    <div class="modal-overlay">
+        <div class="modal-compra">
+            <h2>🎉 ¡Gracias por tu compra!</h2>
+
+            <p><strong>Código:</strong></p>
+            <div class="codigo-compra">
+                @compraExitosa.codigo
+            </div>
+
+            <p>Total pagado:</p>
+            <h4>$@compraExitosa.total</h4>
+
+            <div class="modal-botones">
+                <button class="btn-secundario" @onclick="@(() => Nav.NavigateTo("/market"))">
+                    Seguir comprando
+                </button>
+
+                <button class="btn-principal" @onclick="IrAlInicio">
+                    Ir al inicio
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code{
+    private bool mostrarToast = false;
+    private string mensajeToast = "";
+    private bool esErrorToast = false;
+    private bool mostrarModalExito = false;
+    private CompraResponseDTO? compraExitosa;
+
+    private void IrAlInicio()
+    {
+        mostrarModalExito = false;
+        Nav.NavigateTo("/menu");
+    }
+
+    private async Task ConfirmarCompra()
+    {
+        var dto = new ConfirmarCompraDTO
+        {
+            UserId = AuthService.CurrentUser.Id,
+            Articulos = CartService.Items.Select(i => new ArticuloCompraDTO
+            {
+                ArticuloId = i.ArticuloId,
+                Cantidad = i.Cantidad
+            }).ToList(),
+
+            Tickets = CartService.Tickets.Select(t => new TicketCompraDTO
+            {
+                ShowtimeId = t.ShowtimeId,
+                Asiento = t.Asiento
+            }).ToList()
+
+        };
+
+        var result = await VentaService.ConfirmarCompra(dto);
+
+        if (result.Success && result.Data != null)
+        {
+            compraExitosa = result.Data;
+            mostrarModalExito = true;
+            CartService.Clear();
+        }
+        else
+        {
+            mensajeToast = result.Message;
+            esErrorToast = true;
+            mostrarToast = true;
+
+            StateHasChanged();
+            await Task.Delay(3000);
+            mostrarToast = false;
+        }
+    }
+}
+
+<style>
+    /*ticket*/
+
+    .ticket-cardWrap {
+        content: "";
+        display: -webkit-flex;
+        clear: both;
+        width: 380px;
+        margin: 0px;
+        color: #fff;
+        font-family: sans-serif;
+    }
+
+    .ticket-card {
+        background: linear-gradient(to bottom, #e84c3d 0%, #e84c3d 26%, #ecedef 26%, #ecedef 100%);
+        height: auto;
+        float: left;
+        position: relative;
+        padding: 0em;
+        margin-bottom:10px;
+    }
+
+    .ticket-cardLeft {
+        border-top-left-radius: 8px;
+        border-bottom-left-radius: 8px;
+        width: 18em;
+    }
+
+    .ticket-cardRight {
+        width: 7em;
+        border-left: 2px dashed #181818;
+        border-top-right-radius: 8px;
+        border-bottom-right-radius: 8px;
+        position: relative;
+    }
+
+        .ticket-cardRight:before,
+        .ticket-cardRight:after {
+            content: "";
+            position: absolute;
+            display: block;
+            width: .9em;
+            height: .9em;
+            background: #181818;
+            border-radius: 50%;
+            left: -.5em;
+        }
+
+        .ticket-cardRight:before {
+            top: -.4em;
+        }
+
+        .ticket-cardRight:after {
+            bottom: -.4em;
+        }
+
+    .ticket-card h1 {
+        font-size: 1.1em;
+        margin-top: 20px;
+        margin-left:10px;
+    }
+
+    .ticket-title,
+    .ticket-seat,
+    .ticket-time,
+    .ticket-price {
+        text-transform: uppercase;
+        font-weight: bold;
+        margin-right:10px;
+        margin-left:10px;
+    }
+
+        .ticket-title h2,
+        .ticket-seat h2,
+        .ticket-time h2,
+        .ticket-price h2 {
+            font-size: .9em;
+            color: #525252;
+            margin: 2px;
+        }
+
+        .ticket-title span,
+        .ticket-seat span,
+        .ticket-time span,
+        .ticket-price span {
+            margin-left:5px;
+            font-size: .7em;
+            color: #a2aeae;
+        }
+
+    .ticket-title {
+        margin-top: 3em;
+
+    }
+
+    .ticket-seat,
+    .ticket-time {
+        float: left;
+        margin-top: .7em;
+    }
+
+    .ticket-time {
+        margin-left: 1em;
+    }
+
+    .ticket-price {
+        margin-top: .7em;
+    }
+
+    .ticket-eye {
+        width: 2em;
+        height: 1.5em;
+        background: #e84c3d;
+        margin:1px;
+        padding-top:10px;
+        border-radius: 1em / 0.6em;
+        position: relative;
+    }
+
+        .ticket-eye:before {
+            content: "";
+            width: 1em;
+            height: 1em;
+            background: #e84c3d;
+            border-radius: 50%;
+            position: absolute;
+            padding-top: 10px;
+            left: 8px;
+            top: 4px;
+        }
+
+    .ticket-number {
+        text-align: center;
+    }
+
+        .ticket-number h3 {
+            color: #e84c3d;
+            margin: .9em 0 0 0;
+            font-size: 2.5em;
+        }
+
+        .ticket-number span {
+            display: block;
+            color: #a2aeae;
+        }
+
+    .ticket-barcode {
+        height: 2em;
+        width: 0;
+        margin: 1.2em 0 0 .8em;
+        box-shadow: 1px 0 0 1px #343434, 5px 0 0 1px #343434, 10px 0 0 1px #343434, 15px 0 0 1px #343434, 18px 0 0 1px #343434, 22px 0 0 1px #343434, 26px 0 0 1px #343434, 30px 0 0 1px #343434, 35px 0 0 1px #343434, 41px 0 0 1px #343434, 47px 0 0 1px #343434, 56px 0 0 1px #343434, 64px 0 0 1px #343434, 72px 0 0 1px #343434, 81px 0 0 1px #343434;
+    }
+
+
+
+    body {
+        background: #181818;
+    }
+    .carrito-container {
+        padding: 20px;
+        color: white;
+    }
+
+    .carrito-titulo {
+        text-align: center;
+        margin-bottom: 25px;
+        font-weight: 600;
+    }
+
+    .carrito-vacio {
+        background: #1c1c1c;
+        padding: 30px;
+        border-radius: 20px;
+        text-align: center;
+        margin-top: 40px;
+        animation: fadeIn 0.4s ease;
+    }
+
+    .icono-vacio {
+        font-size: 3rem;
+        margin-bottom: 15px;
+    }
+
+    .cart-item {
+        display: flex;
+        gap: 15px;
+        background: #1e1e1e;
+        padding: 15px;
+        border-radius: 16px;
+        margin-bottom: 15px;
+        align-items: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+        .cart-item img {
+            width: 90px;
+            height: 90px;
+            border-radius: 12px;
+            object-fit: cover;
+        }
+
+    .cart-ticket {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #e53935;
+        color: white;
+        padding: 20px;
+        margin-bottom: 15px;
+        border-radius: 10px;
+        position: relative;
+    }
+
+        /* agujeros laterales del ticket */
+        .cart-ticket::before,
+        .cart-ticket::after {
+            content: "";
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: #121212; /* color del fondo de la página */
+            border-radius: 50%;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .cart-ticket::before {
+            left: -15px;
+        }
+
+        .cart-ticket::after {
+            right: -15px;
+        }
+
+    
+
+    .cart-info {
+        flex: 1;
+    }
+
+    .precio-unitario {
+        color: #bbb;
+        margin-bottom: 8px;
+    }
+
+    .contador {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+    }
+
+        .contador button {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: none;
+            background: #333;
+            color: white;
+            font-size: 18px;
+        }
+
+        .contador span {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+    .subtotal {
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+    }
+
+    .btn-eliminar {
+        margin-left:5px;
+        margin-bottom:5px;
+        background: #e53935;
+        border: 2px,inset,grey;
+        border-radius:8px;
+        color: white;
+        font-size: 1rem;
+    }
+
+    .carrito-total {
+        background: #222;
+        padding: 20px;
+        border-radius: 16px;
+        text-align: center;
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
+
+        .carrito-total h2 {
+            color: #ffd700;
+            margin-top: 5px;
+        }
+
+    .btn-confirmar-compra {
+        width: 100%;
+        padding: 14px;
+        border-radius: 14px;
+        border: none;
+        background: #ffd700;
+        color: black;
+        font-weight: 700;
+        font-size: 1rem;
+        margin-top: 10px;
+        transition: transform 0.2s ease;
+    }
+
+        .btn-confirmar-compra:hover {
+            transform: scale(1.03);
+        }
+
+    .btn-vacio {
+        background: #ffd700;
+        color: black;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 12px;
+        font-weight: 600;
+        margin-top: 15px;
+    }
+
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.85);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .modal-compra {
+        background: #1c1c1c;
+        padding: 30px;
+        border-radius: 20px;
+        width: 90%;
+        max-width: 400px;
+        text-align: center;
+        color: white;
+        animation: slideUp 0.3s ease;
+    }
+
+    .codigo-compra {
+        font-size: 1.4rem;
+        letter-spacing: 2px;
+        background: #2a2a2a;
+        padding: 12px;
+        border-radius: 10px;
+        margin: 10px 0 20px 0;
+        color: #ffd700;
+        font-weight: bold;
+    }
+
+    .modal-botones {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-top: 20px;
+    }
+
+    .btn-principal {
+        background: #ffd700;
+        color: black;
+        border: none;
+        padding: 10px 18px;
+        border-radius: 10px;
+        font-weight: bold;
+    }
+
+    .btn-secundario {
+        background: #333;
+        color: white;
+        border: none;
+        padding: 10px 18px;
+        border-radius: 10px;
+    }
+
+    @@keyframes fadeIn {
+        from{opacity: 0;}
+        to {opacity: 1;}
+    }
+    @@keyframes slideUp {
+        from{transform: translateY(20px);opacity: 0;}
+        to {transform: translateY(0);opacity: 1;}
+    }
+
+.toast-custom {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 14px 22px;
+    border-radius: 12px;
+    color: white;
+    font-weight: 600;
+    z-index: 9999;
+    animation: fadeInOut 3s ease forwards;
+}
+
+    .toast-custom.success {
+        background-color: #4caf50;
+    }
+
+    .toast-custom.error {
+        background-color: #e53935;
+    }
+
+    @@keyframes fadeInOut {
+        0%
+
+    {
+        opacity: 0;
+        transform: translate(-50%, 20px);
+    }
+
+    10% {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+
+    90% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(-50%, 20px);
+    }
+
+
+    
+</style>

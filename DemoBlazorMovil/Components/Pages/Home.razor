@@ -8,6 +8,11 @@
 @code {
     private UserDto? User;
 
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthService.InitializeAsync();
+    }
+
     protected override void OnInitialized()
     {
         if (AuthService.IsLoggedIn)
