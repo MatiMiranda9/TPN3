@@ -18,7 +18,7 @@ namespace DemoBlazorMovil.Shared.DTOs
 
         public string? ImagePath { get; set; }
 
-        public bool IsActive { get; set; } = true;
+        public bool IsActive { get; set; }
 
         public List<ShowtimeDTO> Showtimes { get; set; } = new();
     }

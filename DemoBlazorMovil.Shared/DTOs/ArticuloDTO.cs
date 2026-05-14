@@ -20,7 +20,7 @@ namespace DemoBlazorMovil.Shared.DTOs
         [Required(ErrorMessage = "La categoría es obligatoria")]
         public string Categoria { get; set; } = null!;
 
-        public bool IsActive { get; set; } = true;
+        public bool IsActive { get; set; }
         public string? ImagePath { get; set; }
     }
 }

@@ -1,4 +1,6 @@
 using CineApi.Data;
+using CineApi.Services;
+using CineApi.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -49,6 +51,14 @@ builder.Services.AddAuthentication(options =>
                 Encoding.UTF8.GetBytes(jwtSettings["Key"]))
         };
 });
+
+builder.Services.AddScoped<IArticuloService, ArticuloService>();
+builder.Services.AddScoped<IMovieService, MovieService>();
+builder.Services.AddScoped<IShowtimeService, ShowtimeService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IVentaService, VentaService>();
+builder.Services.AddScoped<ISalaService, SalaService>();
 
 var app = builder.Build();
 app.UseCors("AllowAll");

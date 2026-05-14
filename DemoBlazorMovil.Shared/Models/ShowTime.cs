@@ -16,7 +16,7 @@ public partial class Showtime
 
     public int SalaId { get; set; }
 
-    public bool IsActive { get; set; } = true;
+    public bool IsActive { get; set; }
 
     public virtual Movie Movie { get; set; } = null!;
 

@@ -19,7 +19,7 @@ public partial class Movie
 
     public string? ImagePath { get; set; }
 
-    public bool IsActive = true;
+    public bool IsActive { get; set; }
 
     public List<Showtime> Showtimes { get; set; } = new();
 }

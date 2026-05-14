@@ -45,26 +45,32 @@ public class MovieService
     }
 
     public async Task<List<ShowtimeDTO>> GetShowtimes(int movieId)
-        => await _http.GetFromJsonAsync<List<ShowtimeDTO>>($"movies/{movieId}/showtimes") ?? new();
+    => await _http.GetFromJsonAsync<List<ShowtimeDTO>>
+    ($"showtimes/movie/{movieId}") ?? new();
 
-    public async Task<ShowtimeDTO?> AddShowtime(int movieId, ShowtimeDTO showtime)
+    public async Task<ShowtimeDTO?> AddShowtime(ShowtimeDTO showtime)
     {
-        var response = await _http.PostAsJsonAsync($"movies/{movieId}/showtimes", showtime);
-        return await response.Content.ReadFromJsonAsync<ShowtimeDTO>();
+        var response = await _http.PostAsJsonAsync("showtimes", showtime);
+
+        return await response.Content
+            .ReadFromJsonAsync<ShowtimeDTO>();
     }
 
-    public async Task<bool> UpdateShowtime(int movieId, ShowtimeDTO showtime)
+    public async Task<bool> UpdateShowtime(ShowtimeDTO showtime)
     {
-        var response = await _http.PutAsJsonAsync($"movies/{movieId}/showtimes/{showtime.Id}", showtime);
+        var response = await _http.PutAsJsonAsync(
+            $"showtimes/{showtime.Id}",
+            showtime);
+
         return response.IsSuccessStatusCode;
     }
-    public async Task DisableShowtime(int id)
+
+    public async Task<bool> DisableShowtime(int id)
     {
-        await _http.PutAsync($"showtimes/disable/{id}", null);
-    }
-    public async Task<bool> DeleteShowtime(int movieId, int showtimeId)
-    {
-        var response = await _http.DeleteAsync($"movies/{movieId}/showtimes/{showtimeId}");
+        var response = await _http.PutAsync(
+            $"showtimes/disable/{id}",
+            null);
+
         return response.IsSuccessStatusCode;
     }
 }

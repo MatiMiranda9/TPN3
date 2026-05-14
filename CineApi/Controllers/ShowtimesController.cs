@@ -1,8 +1,7 @@
-﻿using CineApi.Data;
+﻿using CineApi.Services.Interfaces;
 using DemoBlazorMovil.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace CineApi.Controllers
 {
@@ -10,82 +9,75 @@ namespace CineApi.Controllers
     [ApiController]
     public class ShowtimesController : ControllerBase
     {
-        private readonly CineDBContext _context;
+        private readonly IShowtimeService _showtimeService;
 
-        public ShowtimesController(CineDBContext context)
+        public ShowtimesController(IShowtimeService showtimeService)
         {
-            _context = context;
+            _showtimeService = showtimeService;
         }
 
-        [Authorize]
+        [HttpGet("movie/{movieId}")]
+        public async Task<IActionResult> GetByMovie(int movieId)
+        {
+            return Ok(await _showtimeService.GetByMovieAsync(movieId));
+        }
+
+        
         [HttpGet("{id}")]
         public async Task<IActionResult> GetShowtime(int id)
         {
-            var showtime = await _context.Showtimes
-                .Include(s => s.Movie)
-                .Include(s => s.Sala)
-                .FirstOrDefaultAsync(s => s.Id == id);
+            var showtime = await _showtimeService.GetByIdAsync(id);
 
             if (showtime == null)
-                return NotFound("Función no encontrada");
+                return NotFound();
 
-            var dto = new ShowtimeDTO
-            {
-                Id = showtime.Id,
-                Time = showtime.Time,
-                Price = showtime.Price,
-                SalaId = showtime.SalaId,
-                SalaNombre = showtime.Sala.Nombre,
-                MovieId = showtime.MovieId,
-                MovieNombre = showtime.Movie.Title,
-                ImagePath = showtime.Movie.ImagePath,
-                IsActive = showtime.IsActive
-            };
-
-            return Ok(dto);
+            return Ok(showtime);
         }
 
         [Authorize]
         [HttpGet("{id}/asientos")]
         public async Task<IActionResult> GetAsientos(int id)
         {
-            var showtime = await _context.Showtimes
-                .Include(s => s.Sala)
-                .FirstOrDefaultAsync(s => s.Id == id);
+            var result = await _showtimeService
+                .GetDisponibilidadAsync(id);
 
-            if (showtime == null)
-                return NotFound("Función no encontrada");
-
-            var ocupados = await _context.Tickets
-                .Where(t => t.ShowtimeId == id)
-                .Select(t => t.Asiento)
-                .ToListAsync();
-
-            var result = new AsientosDisponibilidadDTO
-            {
-                Capacidad = showtime.Sala.Capacidad,
-                Ocupados = ocupados
-            };
+            if (result == null)
+                return NotFound();
 
             return Ok(result);
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpPut("disable/{id}")]
-        public async Task<IActionResult> DisableShowtime(int id)
+        [HttpPost]
+        public async Task<IActionResult> Create(ShowtimeDTO dto)
         {
-            var showtime = await _context.Showtimes.FindAsync(id);
+            var created = await _showtimeService.CreateAsync(dto);
 
-            if (showtime == null)
-            {
+            return Ok(created);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, ShowtimeDTO dto)
+        {
+            var ok = await _showtimeService.UpdateAsync(id, dto);
+
+            if (!ok)
                 return NotFound();
-            }
 
-            showtime.IsActive = false;
+            return NoContent();
+        }
 
-            await _context.SaveChangesAsync();
+        [Authorize(Roles = "Admin")]
+        [HttpPut("disable/{id}")]
+        public async Task<IActionResult> Disable(int id)
+        {
+            var ok = await _showtimeService.DisableAsync(id);
 
-            return Ok();
+            if (!ok)
+                return NotFound();
+
+            return NoContent();
         }
     }
 }

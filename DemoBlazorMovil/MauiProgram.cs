@@ -30,7 +30,7 @@ namespace DemoBlazorMovil
 
                 return new HttpClient(handler)
                 {
-                    BaseAddress = new Uri("https://localhost:5001/api/")
+                    BaseAddress = new Uri("https://cineapi.runasp.net/api/")
                 };
             });
 

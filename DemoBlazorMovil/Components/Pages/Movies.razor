@@ -249,33 +249,66 @@
     private async Task SaveMovie()
     {
         errorMessage = null;
+
         try
         {
             bool ok;
+
             if (currentMovie.Id == 0)
             {
                 var created = await MovieService.Add(currentMovie);
+
                 ok = created != null;
+
+                if (created != null)
+                {
+                    currentMovie.Id = created.Id;
+
+                    foreach (var show in currentMovie.Showtimes)
+                    {
+                        show.MovieId = currentMovie.Id;
+
+                        await MovieService.AddShowtime(show);
+                    }
+                }
             }
             else
             {
                 ok = await MovieService.Update(currentMovie);
+
+                foreach (var show in currentMovie.Showtimes)
+                {
+                    if (show.Id == 0)
+                    {
+                        show.MovieId = currentMovie.Id;
+
+                        await MovieService.AddShowtime(show);
+                    }
+                    else
+                    {
+                        await MovieService.UpdateShowtime(show);
+                    }
+                }
             }
 
             if (!ok)
             {
-
-                errorMessage = "Complete todos los campos para guardar.";
+                errorMessage = "Complete todos los campos";
                 return;
             }
 
             movies = await MovieService.GetAll();
-            currentMovie = new MovieDTO { Showtimes = new List<ShowtimeDTO>() };
+
+            currentMovie = new MovieDTO
+            {
+                Showtimes = new List<ShowtimeDTO>()
+            };
+
             await HideModal();
         }
         catch
         {
-            errorMessage = "⚠️ Ocurrió un error inesperado al guardar.";
+            errorMessage = "⚠️ Error inesperado";
         }
     }
 
@@ -350,10 +383,11 @@
     {
         currentMovie.Showtimes.Add(new ShowtimeDTO
         {
-            Time = DateTime.Now,
+            Time = DateTime.Today,
             SalaId = 1,
             Price = 0,
-            MovieId = currentMovie.Id
+            MovieId = currentMovie.Id,
+            IsActive = true
         });
     }
 

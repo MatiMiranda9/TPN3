@@ -18,7 +18,7 @@ public partial class User
 
     public int IdRol { get; set; }
 
-    public bool IsActive { get; set; } = true;
+    public bool IsActive { get; set; }
 
     public virtual Rol IdRolNavigation { get; set; } = null!;
 
