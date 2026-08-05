@@ -1,124 +1,76 @@
-﻿using DemoBlazorMovil.Models;
+﻿using DemoBlazorMovil.Shared.DTOs;
+using System.Net.Http;
+using System.Net.Http.Json;
+
 
 namespace DemoBlazorMovil.Services;
 
 public class MovieService
 {
-    private readonly List<Movie> _movies = new()
+    private readonly HttpClient _http;
+
+    public MovieService(HttpClient http)
     {
-        new Movie
-        {
-            Id = 1,
-            Title = "Inception",
-            Genre = "Sci-Fi",
-            Year = 2010,
-            ImagePath = "images/movies/inception.jpg",
-            Showtimes = new List<Showtime>
-            {
-                new Showtime { Id = 1, Time = DateTime.Today.AddHours(18), Room = "1", Price = 1200, MovieId = 1 },
-                new Showtime { Id = 2, Time = DateTime.Today.AddHours(21), Room = "1", Price = 1200, MovieId = 1 }
-            }
-        },
-        new Movie
-        {
-            Id = 2,
-            Title = "Interstellar",
-            Genre = "Sci-Fi",
-            Year = 2014,
-            ImagePath = "images/movies/interstellar.jpg",
-            Showtimes = new List<Showtime>
-            {
-                new Showtime { Id = 3, Time = DateTime.Today.AddHours(19), Room = "2", Price = 1500, MovieId = 2 }
-            }
-        }
-    };
-
-    private int NextId => _movies.Count == 0 ? 1 : _movies.Max(m => m.Id) + 1;
-    private int NextShowtimeId => _movies.SelectMany(m => m.Showtimes).Any()
-        ? _movies.SelectMany(m => m.Showtimes).Max(s => s.Id) + 1 : 1;
-
-    // 📌 Películas
-    public IReadOnlyList<Movie> GetAll() => _movies.OrderBy(m => m.Id).ToList();
-
-    public Movie? GetById(int id) => _movies.FirstOrDefault(m => m.Id == id);
-
-    public Movie Add(Movie movie)
-    {
-        movie.Id = NextId;
-
-        // cada showtime nuevo debe tener su MovieId y Id único
-        foreach (var st in movie.Showtimes)
-        {
-            st.Id = NextShowtimeId;
-            st.MovieId = movie.Id;
-        }
-
-        _movies.Add(movie);
-        return movie;
+        _http = http;
     }
 
-    public bool Update(Movie movie)
+    public async Task<List<MovieDTO>> GetAll()
+        => await _http.GetFromJsonAsync<List<MovieDTO>>("movies") ?? new();
+
+    public async Task<MovieDTO?> GetById(int id)
+        => await _http.GetFromJsonAsync<MovieDTO>($"movies/{id}");
+
+    public async Task<MovieDTO?> Add(MovieDTO movie)
     {
-        var existing = _movies.FirstOrDefault(m => m.Id == movie.Id);
-        if (existing == null) return false;
-
-        // Actualizamos propiedades básicas
-        existing.Title = movie.Title;
-        existing.Genre = movie.Genre;
-        existing.Year = movie.Year;
-        existing.ImagePath = movie.ImagePath;
-
-        // Actualizamos funciones (manteniendo MovieId)
-        existing.Showtimes = movie.Showtimes.Select(s => new Showtime
-        {
-            Id = s.Id != 0 ? s.Id : NextShowtimeId, // si no tiene Id, generamos uno nuevo
-            Time = s.Time,
-            Room = s.Room,
-            Price = s.Price,
-            MovieId = existing.Id
-        }).ToList();
-
-        return true;
+        var response = await _http.PostAsJsonAsync("movies", movie);
+        return await response.Content.ReadFromJsonAsync<MovieDTO>();
     }
 
-    public bool Delete(int id)
+    public async Task<bool> Update(MovieDTO movie)
     {
-        var removed = _movies.RemoveAll(m => m.Id == id);
-        return removed > 0;
+        var response = await _http.PutAsJsonAsync($"movies/{movie.Id}", movie);
+        return response.IsSuccessStatusCode;
     }
 
-    // 📌 Funciones
-    public Showtime AddShowtime(int movieId, Showtime showtime)
+    public async Task<bool> Delete(int id)
     {
-        var movie = GetById(movieId);
-        if (movie == null) throw new Exception("Película no encontrada");
-
-        showtime.Id = NextShowtimeId;
-        showtime.MovieId = movieId;
-
-        movie.Showtimes.Add(showtime);
-        return showtime;
+        var response = await _http.DeleteAsync($"movies/{id}");
+        return response.IsSuccessStatusCode;
     }
 
-    public bool UpdateShowtime(int movieId, Showtime showtime)
+    public async Task<bool> Activar(int id)
     {
-        var movie = GetById(movieId);
-        if (movie == null) return false;
-
-        var idx = movie.Showtimes.FindIndex(s => s.Id == showtime.Id);
-        if (idx == -1) return false;
-
-        showtime.MovieId = movieId; // aseguramos relación
-        movie.Showtimes[idx] = showtime;
-        return true;
+        var response = await _http.PutAsync($"movies/activar/{id}", null);
+        return response.IsSuccessStatusCode;
     }
 
-    public bool DeleteShowtime(int movieId, int showtimeId)
-    {
-        var movie = GetById(movieId);
-        if (movie == null) return false;
+    public async Task<List<ShowtimeDTO>> GetShowtimes(int movieId)
+    => await _http.GetFromJsonAsync<List<ShowtimeDTO>>
+    ($"showtimes/movie/{movieId}") ?? new();
 
-        var removed = movie.Showtimes.RemoveAll(s => s.Id == showtimeId);
-        return removed > 0;
+    public async Task<ShowtimeDTO?> AddShowtime(ShowtimeDTO showtime)
+    {
+        var response = await _http.PostAsJsonAsync("showtimes", showtime);
+
+        return await response.Content
+            .ReadFromJsonAsync<ShowtimeDTO>();
+    }
+
+    public async Task<bool> UpdateShowtime(ShowtimeDTO showtime)
+    {
+        var response = await _http.PutAsJsonAsync(
+            $"showtimes/{showtime.Id}",
+            showtime);
+
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> DisableShowtime(int id)
+    {
+        var response = await _http.PutAsync(
+            $"showtimes/disable/{id}",
+            null);
+
+        return response.IsSuccessStatusCode;
     }
 }

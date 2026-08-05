@@ -1,0 +1,558 @@
+﻿@page "/market"
+@using DemoBlazorMovil.Shared.DTOs
+@using DemoBlazorMovil.Shared.Helpers
+@using DemoBlazorMovil.Services
+@inject ArticuloService ArticuloService
+@inject AuthService AuthService
+@inject CartService CartService
+@inject UploadService UploadService
+@inject IJSRuntime JS
+
+<div class="market-bg">
+
+<div class="h-card mt-2">
+    <h3 class="text-center">Market</h3>
+</div>
+
+
+@if (mostrarMensaje)
+{
+    <div class="toast-market">
+        @mensajeExito
+    </div>
+}
+
+    @if (AuthService.esAdmin)
+    {
+    <div style="padding: 15px;">
+        <button @onclick="NewArticulo">
+            + Nuevo Artículo
+        </button>
+
+        <button class="btn-toggle btn-warning" style="margin-top:10px; border:0px;" @onclick="ToggleInactivos">
+            @(mostrarInactivos ? "Ver activos" : "Ver inactivos")
+        </button>
+    </div>
+
+    
+    }
+
+    @if (articulos == null)
+    {
+    <p class="text-center text-white">Cargando artículos...</p>
+    }
+    else if (!articulos.Any())
+    {
+    <p class="text-center text-white">No hay artículos disponibles.</p>
+    }
+    else
+    {
+
+    <div class="market-tabs">
+
+        <button class="@(categoriaSeleccionada == "Todos" ? "active-tab" : "")"
+                @onclick="() => CambiarCategoria(Todos)">
+            Todos
+        </button>
+
+        @foreach (var categoria in CategoriasMarket.Todas)
+        {
+            <button class="@(categoriaSeleccionada == categoria ? "active-tab" : "")"
+                    @onclick="() => CambiarCategoria(categoria)">
+                @categoria
+            </button>
+        }
+
+    </div>
+
+    <div class="market-container">
+        @foreach (var articulo in articulosFiltrados.Where( a => a.IsActive != mostrarInactivos))
+        {
+
+            <div class="market-card">
+
+                <img src="@articulo.ImagePath" alt="@articulo.Nombre" style=" height:230px; object-fit:contain;" />
+
+                <div class="card-body">
+                    <h5>@articulo.Nombre</h5>
+                    <p>@articulo.Descripcion</p>
+
+                    <div class="price-stock">
+                        <span class="price">$@articulo.Precio</span>
+                        @if (AuthService.esAdmin)
+                        {
+                            if (articulo.Stock > 0)
+                            {
+
+                                <span>Stock: @articulo.Stock</span>
+
+                            }
+                            else
+                            {
+                                <span style="color:#ff5252; font-weight:bold;">
+                                    Sin stock
+                                </span>
+                            }
+                        } 
+                    </div>
+
+                    @if (AuthService.esAdmin)
+                    {
+                            @if (!articulo.IsActive)
+                            {
+
+                                <button class="btn-reactivar btn-warning"
+                                @onclick="() => ActivarArticulo(articulo.Id)">
+                                    Reactivar
+                                </button>
+                            }
+                            else
+                            {
+                                <div style="display:flex; gap:10px;">
+                                    <button @onclick="() => EditArticulo(articulo)">
+                                        Editar
+                                    </button>
+
+                                    <button style="background-color:#b00020;"
+                                            @onclick="() => DeleteArticulo(articulo.Id)">
+                                        Eliminar
+                                    </button>
+                                </div>
+                            }
+                            
+                    }
+                    else
+                    {
+                        if (AuthService.IsLoggedIn)
+                        {
+                            if (!cantidadesSeleccionadas.ContainsKey(articulo.Id))
+                                cantidadesSeleccionadas[articulo.Id] = 1;
+
+                            @if (articulo.Stock > 0)
+                            {
+                                <div class="quantity-selector">
+
+                                    <button @onclick="() => DisminuirCantidad(articulo.Id)">
+                                        -
+                                    </button>
+
+                                    <span>@cantidadesSeleccionadas[articulo.Id]</span>
+
+                                    <button @onclick="() => AumentarCantidad(articulo)">
+                                        +
+                                    </button>
+
+                                </div>
+
+                                <button @onclick="() => AgregarAlCarrito(articulo)">
+                                    Agregar al carrito
+                                </button>
+                            }
+                            else
+                            {
+                                <button disable style=" color:black; font-weight:bold; ">
+                                    Sin stock
+                                </button>
+                            }
+                        }
+                        
+                    }
+                </div>
+            </div>
+        }
+    </div>
+    }
+</div>
+<div class="modal fade" id="articuloModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5>@(currentArticulo.Id == 0 ? "Nuevo Artículo" : "Editar Artículo")</h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <EditForm Model="currentArticulo" OnValidSubmit="SaveArticulo">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="mb-3">
+                        <label>Nombre</label>
+                        <InputText class="form-control" @bind-Value="currentArticulo.Nombre" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Descripción</label>
+                        <InputText class="form-control" @bind-Value="currentArticulo.Descripcion" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Precio</label>
+                        <InputNumber class="form-control" @bind-Value="currentArticulo.Precio" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Stock</label>
+                        <InputNumber class="form-control" @bind-Value="currentArticulo.Stock" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Categoría</label>
+
+                        <InputSelect class="form-select"
+                                     @bind-Value="currentArticulo.Categoria">
+
+                            <option value="">-- Seleccionar categoría --</option>
+
+                            @foreach (var categoria in CategoriasMarket.Todas)
+                            {
+                                <option value="@categoria">@categoria</option>
+                            }
+
+                        </InputSelect>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Imagen</label>
+                        <InputFile OnChange="@UploadArticuloImage"
+                                   accept="image/*" />
+
+                        @if (!string.IsNullOrWhiteSpace(currentArticulo.ImagePath))
+                        {
+                            <img src="@currentArticulo.ImagePath"
+                                 style="width:200px"
+                                 class="mt-2 rounded" />
+                        }
+                    </div>
+
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-success">Guardar</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    private List<ArticuloDTO> articulos = new();
+    private ArticuloDTO currentArticulo = new();
+    private bool mostrarMensaje = false;
+    private string mensajeExito = "";
+    private bool mostrarInactivos = false;
+
+    private string Todos = "Todos";
+    private string categoriaSeleccionada = "Todos";
+
+    private IEnumerable<ArticuloDTO> articulosFiltrados =>
+    categoriaSeleccionada == "Todos"
+        ? articulos
+        : articulos.Where(a => a.Categoria == categoriaSeleccionada);
+
+    void ToggleInactivos()
+    {
+        mostrarInactivos = !mostrarInactivos;
+    }
+
+    private void CambiarCategoria(string categoria)
+    {
+        categoriaSeleccionada = categoria;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        articulos = await ArticuloService.GetAll();
+    }
+
+    private async Task SaveArticulo()
+    {
+        if (currentArticulo.Id == 0)
+            await ArticuloService.Add(currentArticulo);
+        else
+            await ArticuloService.Update(currentArticulo);
+
+        articulos = await ArticuloService.GetAll();
+        currentArticulo = new ArticuloDTO();
+        await HideModal();
+    }
+
+    private void EditArticulo(ArticuloDTO articulo)
+    {
+        currentArticulo = new ArticuloDTO
+        {
+            Id = articulo.Id,
+            Nombre = articulo.Nombre,
+            Descripcion = articulo.Descripcion,
+            Precio = articulo.Precio,
+            Stock = articulo.Stock,
+            Categoria = articulo.Categoria,
+            ImagePath = articulo.ImagePath
+        };
+
+        ShowModal();
+    }
+
+    private void NewArticulo()
+    {
+        currentArticulo = new ArticuloDTO
+        {
+            Categoria = CategoriasMarket.Snacks
+        };
+        ShowModal();
+    }
+
+    async Task ActivarArticulo(int id)
+    {
+        var ok = await ArticuloService.Activar(id);
+
+        if (ok)
+        {
+            var articulo = articulos.FirstOrDefault(a => a.Id == id);
+            if (articulo != null)
+                articulo.IsActive = true;
+            StateHasChanged();
+        }
+    }
+
+    async Task DeleteArticulo(int id)
+    {
+        var ok = await ArticuloService.Delete(id);
+
+        if (ok)
+        {
+            var articulo = articulos.FirstOrDefault(a => a.Id == id);
+            if (articulo != null)
+                articulo.IsActive = false;
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task UploadArticuloImage(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            System.Diagnostics.Debug.WriteLine("Entró");
+
+            var file = e.File;
+
+            System.Diagnostics.Debug.WriteLine(file.Name);
+            System.Diagnostics.Debug.WriteLine(file.Size);
+            System.Diagnostics.Debug.WriteLine(file.ContentType);
+
+            var url = await UploadService.UploadImage(file, "articulos");
+
+            System.Diagnostics.Debug.WriteLine(url);
+
+            if (!string.IsNullOrEmpty(url))
+            {
+                currentArticulo.ImagePath = url;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(ex.ToString());
+        }
+    }
+
+    //seleccionar cantidad
+
+    private Dictionary<int, int> cantidadesSeleccionadas = new();
+
+    private void AumentarCantidad(ArticuloDTO articulo)
+    {
+        int cantidadEnCarrito = CartService.Items
+            .Where(x => x.ArticuloId == articulo.Id)
+            .Sum(x => x.Cantidad);
+
+        int actual = cantidadesSeleccionadas[articulo.Id];
+
+        if (cantidadEnCarrito + actual < articulo.Stock)
+            cantidadesSeleccionadas[articulo.Id]++;
+    }
+
+    private void DisminuirCantidad(int articuloId)
+    {
+        if (cantidadesSeleccionadas[articuloId] > 1)
+            cantidadesSeleccionadas[articuloId]--;
+    }
+
+    private async Task AgregarAlCarrito(ArticuloDTO articulo)
+    {
+        int cantidad = cantidadesSeleccionadas[articulo.Id];
+
+        bool agregado = CartService.AddItem(articulo, cantidad);
+
+        if (agregado)
+        {
+            cantidadesSeleccionadas[articulo.Id] = 1;
+            mensajeExito = "Producto agregado";
+        }
+        else
+        {
+            mensajeExito = "Stock insuficiente";
+        }
+
+        mostrarMensaje = true;
+        StateHasChanged();
+        await Task.Delay(1500);
+        mostrarMensaje = false;
+        StateHasChanged();
+    }
+
+    private void ShowModal() =>
+        JS.InvokeVoidAsync("bootstrapModal.show", "#articuloModal");
+
+    private Task HideModal() =>
+        JS.InvokeVoidAsync("bootstrapModal.hide", "#articuloModal").AsTask();
+}
+
+<style>
+    .market-bg{
+        position: absolute;
+        min-height: 100vh;
+        width:100%;
+        background: url("images/background/background.png") no-repeat center center fixed;
+        background-size: cover;
+    }
+
+    .h-card {
+        background-color: rgba(5, 5, 5, 0.55);
+        color: #D65D00;
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        font-weight: bold;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+    }
+    .market-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding: 15px;
+}
+
+.market-card {
+    background: #1e1e1e;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+}
+
+.market-card img {
+    width: 100%;
+    height: 180px;
+    object-fit: contain;
+}
+
+.card-body {
+    padding: 10px;
+    color: white;
+}
+
+.price-stock {
+    display: flex;
+    justify-content: space-between;
+    margin: 10px 0;
+}
+
+.price {
+    font-weight: bold;
+    font-size: 18px;
+    color: #4caf50;
+}
+
+button {
+    width: 100%;
+    padding: 8px;
+    background-color: #D65D00;
+    border: none;
+    color: white;
+    border-radius: 8px;
+}
+
+    .market-tabs {
+        display: flex;
+        gap: 10px;
+        padding: 10px 15px;
+        overflow-x: auto;
+    }
+
+    .market-tabs button {
+        background-color: #2a2a2a;
+        border: none;
+        color: white;
+        padding: 6px 14px;
+        border-radius: 20px;
+        white-space: nowrap;
+        transition: all 0.25s ease;
+    }
+
+    .market-tabs button.active-tab {
+        background-color: #e50914;
+        font-weight: bold;
+    }
+
+    .quantity-selector {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        gap: 10px;
+    }
+
+    .quantity-selector button {
+        width: 35px;
+        height: 35px;
+        border-radius: 8px;
+        background-color: #2a2a2a;
+        color: white;
+        border: none;
+        font-size: 18px;
+    }
+     .quantity-selector span {
+        min-width: 20px;
+        text-align: center;
+        font-weight: bold;
+     }
+
+    .toast-market {
+        position: fixed;
+        top: 25px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #4caf50;
+        color: white;
+        padding: 12px 25px;
+        border-radius: 12px;
+        font-weight: bold;
+        z-index: 2000;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        animation: fadeInOut 1.5s ease;
+    }
+
+    .toast-market {
+    position: fixed;
+    top: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #4caf50;
+    color: white;
+    padding: 12px 25px;
+    border-radius: 12px;
+    font-weight: bold;
+    z-index: 2000;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    animation: fadeInOut 1.5s ease;
+}
+
+ @@keyframes fadeInOut {
+    0% { opacity: 0; transform: translate(-50%, -10px); }
+    10% { opacity: 1; transform: translate(-50%, 0); }
+    90% { opacity: 1; }
+    100% { opacity: 0; }
+}
+</style>

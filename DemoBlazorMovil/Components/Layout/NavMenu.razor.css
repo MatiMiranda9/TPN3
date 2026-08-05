@@ -17,8 +17,10 @@
 
 .top-row {
     height: 3.5rem;
-    background-color: rgba(0,0,0,0.4);
+    background-color: #ff0000;
+    padding-bottom:0 !important;
 }
+
 
 .navbar-brand {
     font-size: 1.1rem;
@@ -32,6 +34,7 @@
     margin-right: 0.75rem;
     top: -1px;
     background-size: cover;
+    align-self:center; 
 }
 
 .bi-house-door-fill-nav-menu {
@@ -86,7 +89,7 @@
     display: block;
 }
 
-@media (min-width: 641px) {
+@media () {
     .navbar-toggler {
         display: none;
     }

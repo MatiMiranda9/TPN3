@@ -1,0 +1,238 @@
+﻿@page "/ventas"
+@using DemoBlazorMovil.Shared.DTOs
+@inject HttpClient Http
+
+<h2 class="titulo">Ventas</h2>
+
+<div class="buscador">
+    <input placeholder="Ingresar código de compra"
+           @bind="codigoBusqueda" />
+
+    <button class="btn-buscar"
+            @onclick="BuscarVenta">
+        Buscar
+    </button>
+</div>
+
+@if (ventaEncontrada != null)
+{
+    <div class="venta-detalle">
+        <h4>Venta encontrada</h4>
+
+        <p><b>Código:</b> @ventaEncontrada.Codigo</p>
+        <p><b>Fecha:</b> @ventaEncontrada.Fecha</p>
+        <p><b>Total:</b> $@ventaEncontrada.Total</p>
+
+        <button class="btn-detalle"
+                @onclick=" async () => await VerDetalle(ventaEncontrada)">
+            Ver detalle
+        </button>
+    </div>
+}
+
+<h4 class="mt-4">Ventas recientes</h4>
+
+@if (ventas == null)
+{
+    <p>Cargando...</p>
+}
+else
+{
+    @foreach (var v in ventas)
+    {
+        <div class="venta-card">
+
+            <div>
+                <p><b>Código:</b> @v.Codigo</p>
+                <p>@v.Fecha</p>
+            </div>
+
+            <div>
+                <p>$@v.Total</p>
+
+                <button class="btn-detalle"
+                        @onclick=" async () => await VerDetalle(v)">
+                    Ver
+                </button>
+            </div>
+
+        </div>
+    }
+}
+
+@if (ventaDetalle != null)
+{
+    <div class="modal-overlay">
+
+        <div class="modal-venta">
+
+            <h4>Detalle de venta</h4>
+
+            <p><b>Código:</b> @ventaDetalle.Codigo</p>
+            <p><b>Fecha:</b> @ventaDetalle.Fecha</p>
+            
+            @if (ventaDetalle.Articulos.Any())
+            {
+                <h5>Artículos</h5>
+
+                @foreach (var a in ventaDetalle.Articulos)
+                {
+                    <p>@a.Nombre X @a.Cantidad</p>
+                }
+            }
+            
+            @if (ventaDetalle.Tickets.Any())
+            {
+                <h5>Tickets</h5>
+
+                @foreach (var t in ventaDetalle.Tickets)
+                {
+                    <p>@t.MovieNombre - @t.Fecha</P>
+                    <p>@t.Sala - Asiento @t.Asiento</p>
+                }
+            }
+            
+
+            <h4>Total: $@ventaDetalle.Total</h4>
+
+            <button class="btn-cerrar"
+                    @onclick="() => ventaDetalle = null">
+                Cerrar
+            </button>
+
+        </div>
+
+    </div>
+}
+
+@code {
+
+    private List<VentaDTO> ventas;
+    private VentaDTO ventaEncontrada;
+
+    private VentaDTO ventaDetalle;
+
+    private string codigoBusqueda;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ventas = await Http.GetFromJsonAsync<List<VentaDTO>>("ventas");
+    }
+
+    async Task BuscarVenta()
+    {
+        try
+        {
+            ventaEncontrada = await Http.GetFromJsonAsync<VentaDTO>(
+                $"ventas/codigo/{codigoBusqueda}");
+        }
+        catch
+        {
+            ventaEncontrada = null;
+        }
+    }
+
+   async Task VerDetalle(VentaDTO venta)
+{
+    try
+    {
+        ventaDetalle = await Http.GetFromJsonAsync<VentaDTO>(
+            $"ventas/codigo/{venta.Codigo}");
+    }
+    catch
+    {
+        ventaDetalle = null;
+    }
+}
+}
+
+<style>
+   
+    html, body {
+    min-height: 100vh;
+    background-color:#e9ecef;
+    }
+
+    .titulo {
+        color: white;
+        text-align: center;
+        margin-bottom: 20px;
+        background-color:#1e1e1e;
+        border-radius:8px;
+        padding:10px;
+    }
+
+    .buscador {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+        .buscador input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+        }
+
+    .btn-buscar {
+        background: #fbc02d;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-weight: bold;
+    }
+
+    .venta-detalle {
+        background: #1e1e1e;
+        padding: 14px;
+        border-radius: 12px;
+        margin-bottom: 10px;
+        color: white;
+    }
+
+    .venta-card {
+        background: #1e1e1e;
+        padding: 14px;
+        border-radius: 12px;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: white;
+    }
+
+    .btn-detalle {
+        background: #fbc02d;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 8px;
+    }
+
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .modal-venta {
+        background: #1e1e1e;
+        padding: 24px;
+        border-radius: 14px;
+        width: 90%;
+        max-width: 400px;
+        color: white;
+    }
+
+    .btn-cerrar {
+        width: 100%;
+        margin-top: 20px;
+        padding: 12px;
+        border: none;
+        border-radius: 10px;
+        background: #fbc02d;
+    }
+</style>

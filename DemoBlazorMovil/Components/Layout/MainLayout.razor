@@ -2,14 +2,13 @@
 @inherits LayoutComponentBase
 @inject AuthService AuthService
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<div class="page" style="padding:0 !important;border:0 !important">
+    <NavMenu />
+    
 
-    <main>
+    <main style="padding:0 !important;">
        
-        <article class="content px-4">
+        <article class="content" style="padding:0 !important;">
             @Body
         </article>
     </main>

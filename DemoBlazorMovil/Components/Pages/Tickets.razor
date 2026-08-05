@@ -1,0 +1,252 @@
+﻿@page "/tickets/{ShowtimeId:int}"
+@using DemoBlazorMovil.Shared.DTOs
+@using DemoBlazorMovil.Services
+@inject HttpClient Http
+@inject CartService CartService
+@inject NavigationManager Nav
+
+<div class="funcion">
+    <h2 class="titulo-funcion">@movieNombre</h2>
+    <div class="info-funcion">
+
+        <div>
+            <span class="label">Fecha:</span>
+            <span>@fecha.ToString("dd/MM/yyyy")</span>
+        </div>
+        <div>
+            <span class="label">Hora:</span>
+            <span>@fecha.ToString("HH:mm")</span>
+        </div>
+        <div>
+            <span class="label">Precio:</span>
+            <span>$@precio</span>
+        </div>
+    </div>
+</div>
+
+
+@if (capacidad == 0)
+{
+    <p class="loading">Cargando sala...</p>
+}
+else
+{
+    <!-- Pantalla -->
+    <div class="pantalla">
+        PANTALLA
+    </div>
+
+    <!-- Asientos -->
+    <div class="sala-grid">
+        @for (int i = 1; i <= capacidad; i++)
+        {
+            var asientoNumero = i;
+            var ocupado = ocupados.Contains(asientoNumero);
+            var seleccionado = seleccionados.Contains(asientoNumero);
+
+            <button class="seat
+                                  @(ocupado ? "ocupado" : "")
+                                  @(seleccionado ? "seleccionado" : "")"
+                    disabled="@ocupado"
+                    @onclick="() => ToggleSeat(asientoNumero)">
+                @asientoNumero
+            </button>
+        }
+    </div>
+
+    <!-- Resumen -->
+    <div class="resumen">
+        <div class="resumen-info">
+            <span>@seleccionados.Count asiento(s)</span>
+            <span class="total">$@(seleccionados.Count* precio)</span>
+        </div>
+
+        <button class="btn-agregar"
+                disabled="@(!seleccionados.Any())"
+                @onclick="AgregarAlCarrito">
+            Agregar al carrito
+        </button>
+    </div>
+}
+
+@code {
+    [Parameter] public int ShowtimeId { get; set; }
+
+    private int capacidad;
+    private List<int> ocupados = new();
+    private HashSet<int> seleccionados = new HashSet<int>();
+
+    private decimal precio;
+    private string movieNombre = "";
+    private string imagePath = "";
+    private DateTime fecha;
+    private string sala = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await Http.GetFromJsonAsync<AsientosDisponibilidadDTO>(
+            $"showtimes/{ShowtimeId}/asientos");
+
+        capacidad = result.Capacidad;
+        ocupados = result.Ocupados;
+
+        var showtime = await Http.GetFromJsonAsync<ShowtimeDTO>(
+            $"showtimes/{ShowtimeId}");
+
+        precio = showtime.Price;
+        movieNombre = showtime.MovieNombre;
+        fecha = showtime.Time;
+        imagePath = showtime.ImagePath;
+        sala = showtime.SalaNombre;
+
+    }
+
+    void ToggleSeat(int numero)
+    {
+        if (seleccionados.Contains(numero))
+            seleccionados.Remove(numero);
+        else
+            seleccionados.Add(numero);
+    }
+
+    void AgregarAlCarrito()
+    {
+        foreach (var asiento in seleccionados)
+        {
+            CartService.AddTicket(new CartTicketDTO
+            {
+                ShowtimeId = ShowtimeId,
+                Asiento = asiento,
+                Precio = precio,
+                MovieNombre = movieNombre,
+                ImagePath = imagePath,
+                Sala = sala,
+                Fecha = fecha
+            });
+        }
+
+        Nav.NavigateTo("/carrito");
+    }
+}
+
+<style>
+
+    body{
+        position: absolute;
+        min-height: 100vh;
+        background: url("images/background/alfombra-bg.png") no-repeat center center fixed;
+        background-size: cover;
+        width: 100%;
+    }
+    span{
+        color:white;
+    }
+
+    .funcion{
+        background: #1f1f1f;
+        padding: 12px;
+        border-radius: 12px;
+        margin-bottom: 15px;
+        display:flow;
+        
+    }
+
+   .titulo-funcion {
+    color: #fbc02d;
+    text-align: center;
+    margin-bottom:10px;
+    font-weight: 700;
+    }
+
+    .info-funcion {
+    background: #1f1f1f;
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    }
+
+.label {
+    font-weight: 600;
+    color: #fbc02d;
+}
+
+.loading {
+    text-align: center;
+    margin-top: 30px;
+}
+
+.pantalla {
+    text-align: center;
+    background: linear-gradient(to right, #666, #aaa, #666);
+    color: black;
+    font-weight: bold;
+    padding: 6px;
+    border-radius: 20px;
+    margin-bottom: 15px;
+    font-size: 13px;
+    letter-spacing: 2px;
+}
+
+.sala-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 4px;
+    margin-bottom: 20px;
+}
+
+.seat {
+    aspect-ratio: 1/1; 
+    border-radius: 6px;
+    border: none;
+    background: #2c2c2c;
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 0;
+}
+
+.seat:hover {
+    background: #444;
+}
+
+.seat.ocupado {
+    background: #b71c1c;
+    color: white;
+}
+
+.seat.seleccionado {
+    background: #fbc02d;
+    color: black;
+}
+
+.resumen {
+    position: sticky;
+    bottom: 0;
+    background: #111;
+    padding: 12px;
+    border-top: 1px solid #333;
+    border-radius:12px;
+}
+
+.resumen-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.total {
+    color: #fbc02d;
+    font-size: 18px;
+}
+
+.btn-agregar {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    background: #fbc02d;
+    border: none;
+    font-weight: bold;
+    font-size: 15px;
+}
+</style>

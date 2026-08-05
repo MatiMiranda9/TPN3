@@ -1,72 +1,132 @@
 ﻿@page "/users"
-@using DemoBlazorMovil.Models
+@using DemoBlazorMovil.Shared.DTOs
 @using DemoBlazorMovil.Services
+@using Microsoft.AspNetCore.Components.Forms
 @inject UserService UserService
+@inject AuthService AuthService
 
-<h3>Usuarios</h3>
+<h2>Usuarios</h2>
 
-<button class="btn btn-primary mb-3" @onclick="NewUser">
-    <i class="bi bi-person-plus-fill"></i> Nuevo Usuario
+<button class="btn-toggle btn-warning" style="margin:5px;border:0px;" @onclick="ToggleInactivos">
+    @(mostrarInactivos ? "Ver activos" : "Ver inactivos")
 </button>
 
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Foto</th>
-            <th>Nombre</th>
-            <th>Email</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var u in users)
-        {
-            <tr>
-                <td><img src="@u.ImagePath" alt="@u.Name" width="60" height="60" class="rounded-circle" /></td>
-                <td>@u.Name</td>
-                <td>@u.Email</td>
-                <td>
-                    <button class="btn btn-sm btn-warning me-1" @onclick="() => EditUser(u)">
-                        <i class="bi bi-pencil-square"></i>
-                    </button>
-                    <button class="btn btn-sm btn-danger" @onclick="() => DeleteUser(u.Id)">
-                        <i class="bi bi-trash-fill"></i>
-                    </button>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+<input class="form-control mb-3" placeholder="Buscar usuario..."
+       @bind="searchTerm" @bind:event="oninput" />
 
-<!-- Modal Usuarios -->
+<div class="table-responsive">
+
+    <table class="table table-dark table-hover shadow">
+
+        <thead>
+            <tr>
+                <th>Foto</th>
+                <th>Nombre</th>
+                <th class="d-none d-md-table-cell">Email</th>
+                <th>Rol</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (var u in PagedUsers.Where(u => u.IsActive != mostrarInactivos))
+            {
+                <tr>
+                    <td>
+                        <img src="@u.ImagePath" width="45" height="45" class="rounded-circle" />
+                    </td>
+
+                    <td>@u.Name</td>
+
+                    <td class="d-none d-md-table-cell">@u.Email</td>
+
+                    <td>
+                        @if (u.IdRol == 1)
+                        {
+                            <span class="badge bg-warning text-dark">Admin</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Usuario</span>
+                        }
+                    </td>
+
+
+                    <td>
+                        @if (!u.IsActive)
+                        {
+                            <button class="btn-reactivar btn-warning"
+                                    @onclick="() => ActivarUser(u.Id)">
+                                Reactivar
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-sm btn-warning me-1" @onclick="() => EditUser(u)">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+
+                            <button class="btn btn-sm btn-danger" @onclick="() => DeleteUser(u.Id)">
+                                <i class="bi bi-trash-fill"></i>
+                            </button>
+                        }
+                        
+                    </td>
+
+                </tr>
+            }
+        </tbody>
+
+    </table>
+
+</div>
+
+
+<div class="d-flex justify-content-between align-items-center mt-3">
+    <button class="btn btn-secondary" @onclick="PreviousPage" disabled="@(currentPage == 1)">
+        <i class="bi bi-arrow-left"></i> Anterior
+    </button>
+
+    <span>Página @currentPage de @TotalPages</span>
+
+    <button class="btn btn-secondary" @onclick="NextPage" disabled="@(currentPage == TotalPages)">
+        Siguiente <i class="bi bi-arrow-right"></i>
+    </button>
+</div>
+
+
 <div class="modal fade" id="userModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">@((currentUser.Id == 0) ? "Nuevo Usuario" : "Editar Usuario")</h5>
+                <h5 class="modal-title">@((editingId is null) ? "Nuevo Usuario" : "Editar Usuario")</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <EditForm Model="currentUser" OnValidSubmit="SaveUser">
+                <EditForm Model="formUser" OnValidSubmit="SaveUser">
                     <DataAnnotationsValidator />
                     <ValidationSummary />
 
                     <div class="mb-3">
                         <label class="form-label">Nombre</label>
-                        <InputText class="form-control" @bind-Value="currentUser.Name" />
+                        <InputText class="form-control" @bind-Value="formUser.Name" />
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Email</label>
-                        <InputText class="form-control" @bind-Value="currentUser.Email" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Contraseña</label>
-                        <InputText type="password" class="form-control" @bind-Value="currentUser.Password" />
+                        <InputText class="form-control" @bind-Value="formUser.Email" />
                     </div>
                     <div class="mb-3">
                         <label>Imagen (ruta local)</label>
-                        <InputText class="form-control" @bind-Value="currentUser.ImagePath" />
+                        <InputText class="form-control" @bind-Value="formUser.ImagePath" />
                     </div>
+                    @if(editingId != AuthService.CurrentUser.Id)
+                    {
+                        <div class="mb-3 form-check">
+                            <InputCheckbox class="form-check-input" @bind-Value="esAdmin" />
+                            <label class="form-check-label">Administrador</label>
+                        </div>
+                    }
+                    
                     <button type="submit" class="btn btn-success">Guardar</button>
                 </EditForm>
             </div>
@@ -75,48 +135,211 @@
 </div>
 
 @code {
-    private IReadOnlyList<User> users = Array.Empty<User>();
-    private User currentUser = new();
 
-    protected override void OnInitialized() => users = UserService.GetAll();
+    private List<UserDto> users = new();
+    private UserDto formUser = new();
+    private int? editingId = null;
+    bool mostrarInactivos = false;
 
-    private void SaveUser()
+    void ToggleInactivos()
     {
-        if (currentUser.Id == 0) UserService.Add(currentUser);
-        else UserService.Update(currentUser);
-
-        currentUser = new User();
-        users = UserService.GetAll();
-        HideModal();
+        mostrarInactivos = !mostrarInactivos;
     }
 
-    private void EditUser(User user)
+    private bool esAdmin;
+
+    private void MapearRol()
     {
-        currentUser = new User
+        formUser.IdRol = esAdmin ? 1 : 2;
+    }
+
+
+    private string searchTerm = "";
+    private int currentPage = 1;
+    private int pageSize = 5;
+
+    private int TotalPages => (int)Math.Ceiling((double)FilteredUsers.Count() / pageSize);
+
+    private IEnumerable<UserDto> FilteredUsers =>
+        string.IsNullOrWhiteSpace(searchTerm)
+            ? users
+            : users.Where(u =>
+                u.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                u.Email.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+
+    private IEnumerable<UserDto> PagedUsers =>
+        FilteredUsers.Skip((currentPage - 1) * pageSize).Take(pageSize);
+
+    protected override async Task OnInitializedAsync()
+    {
+        users = await UserService.GetAll();
+    }
+
+    private async Task SaveUser()
+    {
+        if (editingId is null)
         {
-            Id = user.Id,
+            //msj no encontrado
+        }
+        else
+        {
+            MapearRol();
+            await UserService.Update(editingId.Value, formUser);
+        }
+
+
+        editingId = null;
+        formUser = new UserDto();
+        users = await UserService.GetAll();
+        await HideModal();
+    }
+
+    private void EditUser(UserDto user)
+    {
+        editingId = user.Id;
+        MapearRol();
+        formUser = new UserDto
+        {
             Name = user.Name,
             Email = user.Email,
-            Password = user.Password,
-            ImagePath = user.ImagePath
+            ImagePath = user.ImagePath,
+            IdRol = user.IdRol,
         };
+
         ShowModal();
     }
 
-    private void DeleteUser(int id)
+    async Task ActivarUser(int id)
     {
-        UserService.Delete(id);
-        users = UserService.GetAll();
+        var ok = await UserService.Activar(id);
+
+        if (ok)
+        {
+            var user = users.FirstOrDefault(u => u.Id == id);
+            if (user != null)
+                user.IsActive = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DeleteUser(int id)
+    {
+        await UserService.Delete(id);
+        users = await UserService.GetAll();
     }
 
     private void NewUser()
     {
-        currentUser = new User();
+        editingId = null;
+        formUser = new UserDto();
+        MapearRol();
         ShowModal();
     }
 
+    private void NextPage()
+    {
+        if (currentPage < TotalPages) currentPage++;
+    }
+
+    private void PreviousPage()
+    {
+        if (currentPage > 1) currentPage--;
+    }
+
     private void ShowModal() => JS.InvokeVoidAsync("bootstrapModal.show", "#userModal");
-    private void HideModal() => JS.InvokeVoidAsync("bootstrapModal.hide", "#userModal");
+    private Task HideModal() => JS.InvokeVoidAsync("bootstrapModal.hide", "#userModal").AsTask();
 
     [Inject] private IJSRuntime JS { get; set; }
 }
+
+<style>
+    body {
+        background-color: #354052;
+    }
+
+    /* título */
+    h2 {
+        color: #354052;
+        text-align:center;
+        justify-content:center;
+        background-color:black;
+        border-radius:8px;
+        font-weight: 600;
+        margin-bottom: 25px;
+        padding:10px;
+    }
+
+    /* buscador */
+    .form-control {
+        border-radius: 10px;
+    }
+
+    /* tabla */
+    .table {
+        background-color: #2c2f36;
+        color: #f1f1f1;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+        .table thead {
+            background: #1f2228;
+            color: #ffc107;
+        }
+
+        .table th {
+            border: none;
+        }
+
+        .table td {
+            border-top: 1px solid #3a3f46;
+            vertical-align: middle;
+        }
+
+        .table tbody tr:hover {
+            background: #343a40;
+        }
+
+        .table img {
+            width: 45px;
+            height: 45px;
+            object-fit: cover;
+        }
+
+    td {
+        max-width: 180px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* badges */
+    .badge {
+        font-size: 0.85rem;
+        padding: 6px 10px;
+    }
+
+    /* botones */
+    .btn-warning {
+        border-radius: 8px;
+    }
+
+    .btn-danger {
+        border-radius: 8px;
+    }
+
+    /* paginación */
+    .d-flex span {
+        font-weight: 500;
+    }
+
+    /* modal */
+    .modal-content {
+        border-radius: 12px;
+    }
+
+    .modal-header {
+        background: #343a40;
+        color: white;
+    }
+</style>

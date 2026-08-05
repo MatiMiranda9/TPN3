@@ -1,0 +1,237 @@
+﻿@page "/"
+@page "/menu"
+@using DemoBlazorMovil.Services
+@using DemoBlazorMovil.Shared.DTOs
+@inject AuthService AuthService
+@inject CartService CartService
+@implements IDisposable
+@inject NavigationManager Nav
+
+
+<div class="container">
+    <div class="h-card">
+        <h3 class="text-center my-4">
+            Bienvenido @(AuthService.CurrentUser?.Name ?? "Invitado")!
+        </h3>
+        @if (!AuthService.IsLoggedIn)
+        {
+            <h4 class="text-left" style="color:azure">
+                Inicia sesión para comprar tu entrada!
+            </h4>
+
+            <button class="btn-login" @onclick="@(() => Nav.NavigateTo("/login"))">
+                <i class="bi bi-person-circle"></i> Iniciar Sesión
+            </button>
+        }
+
+    </div>
+    
+    
+    <div class="row g-4">
+
+        <!-- Cartelera -->
+        <div class="col-6">
+            <div class="menu-card" @onclick="@(() => Nav.NavigateTo("/movies"))">
+                <i class="bi bi-film menu-icon"></i>
+                <div>Cartelera</div>
+            </div>
+        </div>
+
+        <!-- Snacks -->
+        <div class="col-6">
+            <div class="menu-card" @onclick="@(() => Nav.NavigateTo("/market"))">
+                <i class="bi bi-cup-straw menu-icon"></i>
+                <div>Snacks y Bebidas
+                </div>
+            </div>
+        </div>
+        @if (AuthService.IsLoggedIn)
+        {
+            <!-- Carrito -->
+            <div class="col-6">
+                <div class="menu-card" @onclick="@(() => Nav.NavigateTo("/carrito"))">
+                    <div class="cart-icon">
+                        <i class="bi bi-cart menu-icon"></i>
+
+                        @if (TotalItems > 0)
+                        {
+                            <span class="cart-badge">@TotalItems</span>
+                        }
+                    </div>
+                    <div>
+                        Carrito
+                    </div>
+                </div>
+            </div>
+
+            @if (AuthService.esAdmin)
+            {
+                <!-- Usuarios -->
+                <div class="col-6">
+                    <div class="menu-card" @onclick="@(() => Nav.NavigateTo("/users"))">
+                        <i class="bi bi-people menu-icon"></i>
+                        <div>Usuarios</div>
+                    </div>
+                </div>
+
+                <!-- Ventas -->
+                <div class="col-6">
+                    <div class="menu-card" @onclick="@(() => Nav.NavigateTo("/ventas"))">
+                        <i class="bi bi-cash menu-icon"></i>
+                        <div>Ventas</div>
+                    </div>
+                </div>
+            }
+
+            <!-- Cerrar sesión -->
+            <div class="col-6">
+                <div class="menu-card" @onclick="Logout">
+                    <i class="bi bi-box-arrow-right menu-icon"></i>
+                    <div>Cerrar sesión</div>
+                </div>
+            </div>
+        }
+        
+
+        
+
+    </div>
+</div>
+
+@code {
+    public string userName = "";
+
+
+    private UserDto? User;
+
+    protected override void OnInitialized()
+    {
+        CartService.OnChange += StateHasChanged;
+
+        if (AuthService.IsLoggedIn)
+        {
+            User = AuthService.CurrentUser;
+        }
+    }
+
+    public void Dispose()
+    {
+        CartService.OnChange -= StateHasChanged;
+    }
+
+    private int TotalItems =>
+        CartService.Items.Sum(x => x.Cantidad) + CartService.Tickets.Count;
+
+
+    private void Logout()
+    {
+        AuthService.Logout();
+        Nav.NavigateTo("/login");
+        
+       
+    }
+
+}
+
+    <style>
+    h3 {
+        color: whitesmoke;
+    }
+
+    .container {
+        position: absolute;
+        min-height: 100vh;
+        background: url("images/background/background.png") no-repeat center center fixed;
+        background-size: cover;
+    }
+
+    .menu-card {
+        background-color: rgba(0,0,0,0.75);
+        color: #D65D00;
+        border-radius: 15px;
+        border:2px inset grey;
+        padding: 20px;
+        text-align: center;
+        font-weight: bold;
+        transition: transform 0.2s ease;
+        margin: 5px;
+        aspect-ratio:1/1;
+        min-height: 100px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+        .menu-card:hover {
+            transform: scale(1.05);
+
+        }
+
+        .menu-card div {
+            line-height: 1.2;
+            text-align: center;
+        }
+
+    .menu-icon {
+        font-size: 40px;
+        display: block;
+        margin-bottom: 10px;
+    }
+
+    .cart-icon {
+        position: relative;
+    }
+
+    .cart-badge {
+        position: absolute;
+        top: -6px;
+        right: -8px;
+        min-width: 22px;
+        height: 22px;
+        padding: 0 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #e50914;
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+        border-radius: 8px;
+    }
+
+    .btn-login {
+        background-color: #D65D00;
+        color: black;
+        font-size: 1.1rem;
+        font-weight: bold;
+        padding: 0.8rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.4);
+        align-self:center !important;
+    }
+
+        .btn-login:hover {
+            background-color: #ffdd33;
+            transform: scale(1.05);
+        }
+
+    .bi {
+        margin-right: 8px;
+        vertical-align: middle;
+    }
+
+    .h-card {
+        background-color: rgba(5, 5, 5, 0.55);
+        color: #D65D00;
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        font-weight: bold;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+        margin: 10px;
+    }
+</style>

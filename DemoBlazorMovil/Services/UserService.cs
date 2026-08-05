@@ -1,67 +1,64 @@
-﻿using DemoBlazorMovil.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Net.Http.Json;
+using DemoBlazorMovil.Shared.DTOs;
 
-namespace DemoBlazorMovil.Services
+namespace DemoBlazorMovil.Services;
+
+public class UserService
 {
-    public class UserService
+    private readonly HttpClient _http;
+
+    public UserService(HttpClient http)
     {
-        private readonly List<User> _users = new()
+        _http = http;
+    }
+
+    public async Task<List<UserDto>> GetAll()
+        => await _http.GetFromJsonAsync<List<UserDto>>("users") ?? new();
+
+    public async Task<UserDto?> GetById(int id)
+        => await _http.GetFromJsonAsync<UserDto>($"users/{id}");
+
+
+    public async Task<bool> Update(int id, UserDto user)
+    {
+        var response = await _http.PutAsJsonAsync($"users/{id}", user);
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> Delete(int id)
+    {
+        var response = await _http.DeleteAsync($"users/{id}");
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> Activar(int id)
+    {
+        var response = await _http.PutAsync($"users/activar/{id}", null);
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> Register(RegisterDTO dto)
+    {
+        var response = await _http.PostAsJsonAsync("users/register", dto);
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<LoginResponseDTO?> ValidateLogin(string email, string password)
+    {
+        var loginDto = new UserLoginDto
         {
-            new User
-            {
-                Id = 1,
-                Name = "Admin",
-                Email = "admin@demo.com",
-                Password = "1234",
-                ImagePath = "images/users/admin.jpg",
-                IsAdmin = true
-            },
-            new User
-            {
-                Id = 2,
-                Name = "Mati",
-                Email = "mati@demo.com",
-                Password = "1234",
-                ImagePath = "images/users/user.jpg",
-                IsAdmin = false
-            }
+            Email = email,
+            Password = password
         };
 
-        private int NextId => _users.Count == 0 ? 1 : _users.Max(u => u.Id) + 1;
+        var response = await _http.PostAsJsonAsync("users/login", loginDto);
 
-        // 📌 CRUD Usuarios
-        public IReadOnlyList<User> GetAll() => _users.OrderBy(u => u.Id).ToList();
-        public User? GetById(int id) => _users.FirstOrDefault(u => u.Id == id);
-        public User Add(User user)
+        if (response.IsSuccessStatusCode)
         {
-            user.Id = NextId;
-            _users.Add(user);
-            return user;
+            return await response.Content
+                .ReadFromJsonAsync<LoginResponseDTO>();
         }
 
-        public bool Update(User user)
-        {
-            var idx = _users.FindIndex(u => u.Id == user.Id);
-            if (idx == -1) return false;
-            _users[idx] = user;
-            return true;
-        }
-
-        public bool Delete(int id)
-        {
-            var removed = _users.RemoveAll(u => u.Id == id);
-            return removed > 0;
-        }
-
-        // 📌 Login con validación
-        public User? ValidateLogin(string email, string password) =>
-            _users.FirstOrDefault(u =>
-                u.Email.Equals(email.Trim(), StringComparison.OrdinalIgnoreCase)
-                && u.Password == password);
-
-        // 📌 Helper para saber si es admin
-        public bool IsAdmin(User user) => user != null && user.IsAdmin;
+        return null;
     }
 }
