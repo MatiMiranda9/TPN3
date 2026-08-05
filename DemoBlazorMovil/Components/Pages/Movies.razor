@@ -5,6 +5,7 @@
 @inject MovieService MovieService
 @inject SalaService SalaService
 @inject AuthService AuthService
+@inject UploadService UploadService
 @inject NavigationManager Nav
 
 <div class="cartelera-bg ">
@@ -167,8 +168,16 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Imagen (ruta local)</label>
-                        <InputText class="form-control" @bind-Value="currentMovie.ImagePath" />
+                        <label class="form-label">Imagen</label>
+                        <InputFile OnChange="@UploadMovieImage"
+                                   accept="image/*" />
+
+                        @if (!string.IsNullOrWhiteSpace(currentMovie.ImagePath))
+                        {
+                            <img src="@currentMovie.ImagePath"
+                                 style="width:200px"
+                                 class="mt-2 rounded" />
+                        }
                     </div>
 
                     <h6>Funciones</h6>
@@ -376,6 +385,34 @@
                 movie.IsActive = false;
 
             StateHasChanged();
+        }
+    }
+
+    private async Task UploadMovieImage(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            System.Diagnostics.Debug.WriteLine("Entró");
+
+            var file = e.File;
+
+            System.Diagnostics.Debug.WriteLine(file.Name);
+            System.Diagnostics.Debug.WriteLine(file.Size);
+            System.Diagnostics.Debug.WriteLine(file.ContentType);
+
+            var url = await UploadService.UploadImage(file, "movies");
+
+            System.Diagnostics.Debug.WriteLine(url);
+
+            if (!string.IsNullOrEmpty(url))
+            {
+                currentMovie.ImagePath = url;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(ex.ToString());
         }
     }
 

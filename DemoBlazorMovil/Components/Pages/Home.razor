@@ -1,4 +1,4 @@
-﻿@page "/"
+﻿
 @using DemoBlazorMovil.Shared.DTOs
 @using DemoBlazorMovil.Services
 @inject UserService UserService
@@ -11,10 +11,7 @@
     protected override async Task OnInitializedAsync()
     {
         await AuthService.InitializeAsync();
-    }
 
-    protected override void OnInitialized()
-    {
         if (AuthService.IsLoggedIn)
         {
             User = AuthService.CurrentUser;

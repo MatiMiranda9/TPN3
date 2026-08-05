@@ -15,10 +15,11 @@ namespace DemoBlazorMovil
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
-                    builder.Services.AddBlazorWebView();
                 });
 
             builder.Services.AddMauiBlazorWebView();
+
+            builder.Services.AddBlazoredLocalStorage();
 
             builder.Services.AddTransient<AuthHeaderHandler>();
 
@@ -34,11 +35,6 @@ namespace DemoBlazorMovil
                 };
             });
 
-
-
-            // Servicios
-            builder.Services.AddBlazoredLocalStorage();
-
             builder.Services.AddScoped<UserService>();
             builder.Services.AddScoped<MovieService>();
             builder.Services.AddScoped<SalaService>();
@@ -46,7 +42,7 @@ namespace DemoBlazorMovil
             builder.Services.AddScoped<ArticuloService>();
             builder.Services.AddScoped<CartService>();
             builder.Services.AddScoped<VentaService>();
-
+            builder.Services.AddScoped<UploadService>();
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();

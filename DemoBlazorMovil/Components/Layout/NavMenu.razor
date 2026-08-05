@@ -1,5 +1,6 @@
 ﻿@using DemoBlazorMovil.Services
 @inject AuthService AuthService
+@inject NavigationManager Nav
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container-fluid">
@@ -22,7 +23,7 @@
     }
     <li class="nav-item">
         <a class="nav-link" href="" @onclick="Logout">
-            <i class="bi bi-box-arrow-left"></i> Logout
+            <i class="bi bi-box-arrow-left"></i> Cerrar sesión
         </a>
     </li>
 }
@@ -55,6 +56,7 @@ else
     void Logout()
     {
         AuthService.Logout();
+        Nav.NavigateTo("/login");
     }
 
     public void Dispose()

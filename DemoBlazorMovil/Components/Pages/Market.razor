@@ -5,6 +5,7 @@
 @inject ArticuloService ArticuloService
 @inject AuthService AuthService
 @inject CartService CartService
+@inject UploadService UploadService
 @inject IJSRuntime JS
 
 <div class="market-bg">
@@ -27,11 +28,13 @@
         <button @onclick="NewArticulo">
             + Nuevo Artículo
         </button>
-    </div>
 
-        <button class="btn-toggle btn-warning" style="margin:5px;border:0px;" @onclick="ToggleInactivos">
+        <button class="btn-toggle btn-warning" style="margin-top:10px; border:0px;" @onclick="ToggleInactivos">
             @(mostrarInactivos ? "Ver activos" : "Ver inactivos")
         </button>
+    </div>
+
+    
     }
 
     @if (articulos == null)
@@ -210,8 +213,16 @@
                     </div>
 
                     <div class="mb-3">
-                        <label>Imagen (ruta)</label>
-                        <InputText class="form-control" @bind-Value="currentArticulo.ImagePath" />
+                        <label>Imagen</label>
+                        <InputFile OnChange="@UploadArticuloImage"
+                                   accept="image/*" />
+
+                        @if (!string.IsNullOrWhiteSpace(currentArticulo.ImagePath))
+                        {
+                            <img src="@currentArticulo.ImagePath"
+                                 style="width:200px"
+                                 class="mt-2 rounded" />
+                        }
                     </div>
 
                     <div class="text-end">
@@ -315,6 +326,34 @@
                 articulo.IsActive = false;
 
             StateHasChanged();
+        }
+    }
+
+    private async Task UploadArticuloImage(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            System.Diagnostics.Debug.WriteLine("Entró");
+
+            var file = e.File;
+
+            System.Diagnostics.Debug.WriteLine(file.Name);
+            System.Diagnostics.Debug.WriteLine(file.Size);
+            System.Diagnostics.Debug.WriteLine(file.ContentType);
+
+            var url = await UploadService.UploadImage(file, "articulos");
+
+            System.Diagnostics.Debug.WriteLine(url);
+
+            if (!string.IsNullOrEmpty(url))
+            {
+                currentArticulo.ImagePath = url;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(ex.ToString());
         }
     }
 

@@ -13,7 +13,7 @@ namespace DemoBlazorMovil
         private void BlazorWebView_Initialized(object sender, BlazorWebViewInitializedEventArgs e)
         {
 #if WINDOWS
-            // Obtenemos el WebView2 y abrimos la consola
+            
             var webview2 = e.WebView.CoreWebView2;
             if (webview2 != null)
             {

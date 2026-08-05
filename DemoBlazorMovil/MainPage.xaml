@@ -4,7 +4,7 @@
              xmlns:local="clr-namespace:DemoBlazorMovil"
              xmlns:components="clr-namespace:DemoBlazorMovil.Components"
              x:Class="DemoBlazorMovil.MainPage">
-
+    
     <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html">
         <BlazorWebView.RootComponents>
             <RootComponent Selector="#app" ComponentType="{x:Type components:Routes}" />

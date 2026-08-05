@@ -59,6 +59,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IVentaService, VentaService>();
 builder.Services.AddScoped<ISalaService, SalaService>();
+builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 
 var app = builder.Build();
 app.UseCors("AllowAll");
